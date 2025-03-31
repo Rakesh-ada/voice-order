@@ -186,20 +186,25 @@ main {
 }
 
 .result-box {
-    min-height: 150px;
-    max-height: 40vh;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     padding: 15px;
-    background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 10px;
-    white-space: pre-line;
-    overflow-y: auto;
-    font-size: 1.1rem; /* Slightly larger for better readability */
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    letter-spacing: 0.3px; /* Better letter spacing for readability */
-    line-height: 1.8; /* More spacing between lines */
+    margin: 10px 0;
+    min-height: 100px;
+    font-size: 16px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    direction: ltr;
+    text-align: left;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.bengali-results .result-box {
+    font-family: 'Noto Sans Bengali', sans-serif;
+    font-size: 18px;
+    line-height: 1.6;
 }
 
 /* Add a stronger focus to Bengali text */
