@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Gemini API
     const GEMINI_API_KEY = 'AIzaSyBL_Opc-A1Y1qH8XB8pZ9JDlzx_Ql5rFoM';
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent';
 
     // Helper function for Gemini API calls
     async function callGeminiAPI(prompt) {
