@@ -12,12 +12,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let rawBengaliText = ''; // Stores ONLY Bengali raw input
     let collectingMode = true; // When true, only collect audio without processing
     
-    // Gemini API key
-    const GEMINI_API_KEY = 'AIzaSyDjonLXdO1u8KdXllXSiAsZB0VFXG2iRbU';
+    // Gemini API keys (multiple keys for load balancing)
+    const GEMINI_API_KEYS = [
+        'AIzaSyDjonLXdO1u8KdXllXSiAsZB0VFXG2iRbU',
+        'AIzaSyB0VLTOmvxc2RMWCfH9pj9vLZYGkpMxac0',
+        'AIzaSyBL_Opc-A1Y1qH8XB8pZ9JDlzx_Ql5rFoM'
+    ];
+    let currentKeyIndex = 0;
+    
+    // Get next API key using round-robin
+    function getNextApiKey() {
+        const key = GEMINI_API_KEYS[currentKeyIndex];
+        currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+        return key;
+    }
+    
     const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     
-    // Cache for translations to optimize API usage
+    // Cache for translations and cleanup results to optimize API usage
     const translationCache = new Map();
+    const cleanupCache = new Map();
 
     // 1. Setup Bengali-only Speech Recognition
     function setupBengaliRecognition() {
@@ -119,24 +133,46 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Processing text:', text);
         
         try {
-            // First do basic client-side cleaning
-            const basicCleanedText = removeBasicRepetitions(text);
+            // Check cache first
+            if (cleanupCache.has(text)) {
+                console.log('Using cached cleanup result');
+                const cleanedText = cleanupCache.get(text);
+                bengaliTextElement.textContent = cleanedText;
+                statusIndicator.textContent = 'Processed (cached)';
+                
+                // Auto-translate if enabled
+                if (translateToggle.checked) {
+                    translateBengaliToEnglish(cleanedText);
+                }
+                return;
+            }
             
-            // Then use Gemini to further clean repetitions
-            cleanTextWithGemini(basicCleanedText)
-                .then(finalCleanedText => {
+            // Use Gemini to clean repetitions
+            cleanTextWithGemini(text)
+                .then(cleanedText => {
                     // Display the cleaned text
-                    bengaliTextElement.textContent = finalCleanedText;
+                    bengaliTextElement.textContent = cleanedText;
                     statusIndicator.textContent = 'Processed';
+                    
+                    // Cache the result
+                    cleanupCache.set(text, cleanedText);
+                    
+                    // Limit cache size
+                    if (cleanupCache.size > 25) {
+                        const firstKey = cleanupCache.keys().next().value;
+                        cleanupCache.delete(firstKey);
+                    }
                     
                     // Auto-translate if enabled
                     if (translateToggle.checked) {
-                        translateBengaliToEnglish(finalCleanedText);
+                        translateBengaliToEnglish(cleanedText);
                     }
                 })
                 .catch(error => {
                     console.error('Gemini text cleaning error:', error);
-                    // Fallback to basic cleaned text if Gemini fails
+                    
+                    // On Gemini API failure, fall back to basic cleaning
+                    const basicCleanedText = removeBasicRepetitions(text);
                     bengaliTextElement.textContent = basicCleanedText;
                     statusIndicator.textContent = 'Processed (basic cleanup only)';
                     
@@ -156,7 +192,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Call Gemini API for text cleaning
     async function cleanTextWithGemini(text) {
         try {
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            const apiKey = getNextApiKey();
+            console.log('Using API key for cleanup:', apiKey.substring(0, 5) + '...');
+            
+            const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
@@ -203,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Simple repetition removal for basic cleanup before using Gemini
+    // Simple repetition removal for basic backup cleanup
     function removeBasicRepetitions(text) {
         // First, let's clean up extra spaces and normalize punctuation
         const normalizedText = text.replace(/\s+/g, ' ').trim();
@@ -308,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             translationCache.set(bengaliText, translatedText);
             
             // Limit cache size to prevent memory issues
-            if (translationCache.size > 50) {
+            if (translationCache.size > 25) {
                 // Remove oldest entry
                 const firstKey = translationCache.keys().next().value;
                 translationCache.delete(firstKey);
@@ -316,22 +355,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Translation error:', error);
             statusIndicator.textContent = 'Translation failed: ' + error.message;
-            
-            // Fallback to Google Translate API if Gemini fails
-            try {
-                const fallbackText = await fetchGoogleTranslation(bengaliText);
-                englishTextElement.textContent = fallbackText;
-                statusIndicator.textContent = 'Basic translation complete (fallback)';
-            } catch (fallbackError) {
-                console.error('Fallback translation error:', fallbackError);
-            }
+            englishTextElement.textContent = 'Translation failed. Please try again.';
         }
     }
     
     // Call Gemini API for translation
     async function callGeminiAPI(text) {
         try {
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            const apiKey = getNextApiKey();
+            console.log('Using API key for translation:', apiKey.substring(0, 5) + '...');
+            
+            const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
@@ -377,34 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Gemini API call failed:', error);
             throw error;
-        }
-    }
-    
-    // Google Translate API as fallback
-    async function fetchGoogleTranslation(text) {
-        try {
-            const response = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=bn&tl=en&dt=t&q=' + encodeURI(text));
-            
-            if (!response.ok) {
-                throw new Error(`Translation API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            // Extract translation from Google's API response format
-            let translation = '';
-            if (data && data[0]) {
-                for (let i = 0; i < data[0].length; i++) {
-                    if (data[0][i][0]) {
-                        translation += data[0][i][0];
-                    }
-                }
-            }
-            
-            return translation || 'Translation unavailable';
-        } catch (error) {
-            console.error('Google Translation API error:', error);
-            throw new Error('Failed to connect to translation service');
         }
     }
 
