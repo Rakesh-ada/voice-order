@@ -438,4 +438,20 @@ footer p {
 
 #formatOrderButton:hover {
     background-color: #ffc107;
+}
+
+/* Clean Repetition Button */
+#cleanRepetitionButton {
+    background-color: var(--accent-color);
+    color: white;
+    margin-left: 10px;
+}
+
+#cleanRepetitionButton:hover {
+    background-color: #43a047;
+}
+
+#cleanRepetitionButton.active {
+    background-color: #2e7d32;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 } 
