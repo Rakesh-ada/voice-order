@@ -2,7 +2,7 @@
     "name": "Bengali Voice Order",
     "short_name": "Voice Order",
     "description": "Convert Bengali speech to formatted business orders",
-    "start_url": "/index.html",
+    "start_url": "/voice-order",
     "display": "standalone",
     "background_color": "#f8f9fa",
     "theme_color": "#4285f4",
