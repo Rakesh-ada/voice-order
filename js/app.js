@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 recordButton.classList.add('recording');
                 recordButton.textContent = '⏹️ Stop';
                 collectingMode = true; // Start in collecting mode
+                // Clear the text display when starting new recording
+                bengaliTextElement.textContent = '';
             };
             
             recognition.onresult = (event) => {
@@ -64,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // For interim results, don't update the UI directly
+                // For interim results, show in status indicator only
                 if (interimTranscript) {
                     console.log('Interim transcript:', interimTranscript);
                     statusIndicator.textContent = 'Listening: ' + interimTranscript;
@@ -124,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Processing error:', error);
             statusIndicator.textContent = 'Error processing text: ' + error.message;
+            // On error, clear any partial text to avoid showing unprocessed content
+            bengaliTextElement.textContent = '';
         }
     }
 
@@ -307,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Clear previous content
             rawBengaliText = '';
-            bengaliTextElement.textContent = '';
+            bengaliTextElement.textContent = ''; // Clear display text
             englishTextElement.textContent = '';
             
             // Start recording in collection mode
@@ -342,11 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     processBengaliText(rawBengaliText);
                 } else {
                     statusIndicator.textContent = 'No audio detected';
+                    bengaliTextElement.textContent = ''; // Ensure no text is displayed if no audio
                 }
             }
         } catch (error) {
             console.error('Error stopping recording:', error);
             statusIndicator.textContent = 'Error stopping recording: ' + error.message;
+            bengaliTextElement.textContent = ''; // Clear on error
         }
     }
 
@@ -381,5 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set initial button text
         recordButton.textContent = '🎤 Record Bengali';
+        
+        // Ensure text elements are empty on startup
+        bengaliTextElement.textContent = '';
+        englishTextElement.textContent = '';
     }
 });
