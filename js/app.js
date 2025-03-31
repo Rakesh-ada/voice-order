@@ -15,6 +15,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const GEMINI_API_KEY = 'AIzaSyBL_Opc-A1Y1qH8XB8pZ9JDlzx_Ql5rFoM';
     const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
+    // Helper function for Gemini API calls
+    async function callGeminiAPI(prompt) {
+        try {
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 1024,
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Gemini API Error Response:', errorData);
+                throw new Error(`Gemini API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
+            console.log('Gemini API Response:', data);
+
+            if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                throw new Error('Invalid response format from Gemini API');
+            }
+
+            return data.candidates[0].content.parts[0].text;
+        } catch (error) {
+            console.error('Gemini API call failed:', error);
+            throw error;
+        }
+    }
+
     // 1. Setup Bengali-only Speech Recognition
     function setupBengaliRecognition() {
         try {
@@ -52,10 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (finalTranscript) {
                     console.log('Final transcript:', finalTranscript);
                     rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
-                    // First display the raw text
-                    bengaliTextElement.textContent = rawBengaliText;
                     statusIndicator.textContent = 'Recognized: ' + finalTranscript;
-                    // Then process it for cleaning
+                    // Process the text for cleaning
                     processBengaliText(rawBengaliText);
                 }
             };
@@ -97,32 +139,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             
             console.log('Sending to Gemini API...');
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
+            const cleanedText = await callGeminiAPI(prompt);
             
-            if (!response.ok) {
-                throw new Error(`Gemini API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('Gemini API response:', data);
-            
-            const cleanedText = data.candidates?.[0]?.content?.parts?.[0]?.text || text;
-            
-            // 3. Display Corrected Bengali
+            // Display only the cleaned text
             bengaliTextElement.textContent = cleanedText;
             statusIndicator.textContent = 'Repetitions removed';
             
-            // 4. Auto-translate if enabled
+            // Auto-translate if enabled
             if (translateToggle.checked) {
                 translateBengaliToEnglish(cleanedText);
             }
         } catch (error) {
             console.error('Gemini error:', error);
-            bengaliTextElement.textContent = text; // Fallback to original
             statusIndicator.textContent = 'Error correcting text: ' + error.message;
         }
     }
@@ -145,28 +173,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             
             console.log('Sending to Gemini API for translation...');
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
+            const translatedText = await callGeminiAPI(prompt);
             
-            if (!response.ok) {
-                throw new Error(`Gemini API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('Translation response:', data);
-            
-            const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (translatedText) {
-                englishTextElement.textContent = translatedText.trim();
-                statusIndicator.textContent = 'Translation complete';
-                console.log('Translation displayed:', translatedText);
-            } else {
-                throw new Error('No translation received from API');
-            }
+            englishTextElement.textContent = translatedText.trim();
+            statusIndicator.textContent = 'Translation complete';
+            console.log('Translation displayed:', translatedText);
         } catch (error) {
             console.error('Translation error:', error);
             statusIndicator.textContent = 'Translation failed: ' + error.message;
