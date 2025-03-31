@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isRecording = false;
     let recognizedText = '';
+    let detectedLanguage = '';
     
     // Setup Web Speech API
     function setupSpeechRecognition() {
@@ -24,10 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initialize the speech recognition
             recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
             
-            // Configure recognition
-            recognition.lang = 'bn-IN'; // Bengali (India)
+            // Configure recognition - start with Bengali as default
             recognition.continuous = true;
             recognition.interimResults = true;
+            
+            // Initially detect language automatically
+            recognition.lang = 'bn-IN,en-US'; // Support both Bengali and English
             
             // Handle results
             recognition.onresult = (event) => {
@@ -56,9 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (recognizedText) recognizedText += ' ';
                     recognizedText += finalTranscript;
                     
-                    // Update display
-                    bengaliTextElement.textContent = recognizedText;
-                    statusIndicator.textContent = 'Recognized: ' + finalTranscript;
+                    // Try to detect language from recognized text
+                    detectLanguage(recognizedText);
+                    
+                    // Update primary display based on detected language
+                    if (detectedLanguage === 'bn') {
+                        bengaliTextElement.textContent = recognizedText;
+                    } else {
+                        englishTextElement.textContent = recognizedText;
+                    }
+                    
+                    statusIndicator.textContent = 'Recognized: ' + finalTranscript + ' (Detected: ' + (detectedLanguage === 'bn' ? 'Bengali' : 'English') + ')';
                 }
             };
             
@@ -86,6 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Detect language (Bengali or English)
+    function detectLanguage(text) {
+        // Bengali Unicode range: \u0980-\u09FF
+        const bengaliPattern = /[\u0980-\u09FF]/;
+        
+        // If the text contains Bengali characters, consider it Bengali
+        if (bengaliPattern.test(text)) {
+            detectedLanguage = 'bn';
+            // Update recognition language to Bengali for better accuracy
+            recognition.lang = 'bn-IN';
+        } else {
+            detectedLanguage = 'en';
+            // Update recognition language to English for better accuracy
+            recognition.lang = 'en-US';
+        }
+        
+        return detectedLanguage;
+    }
+    
     // Toggle recording function
     function toggleRecording() {
         if (isRecording) {
@@ -105,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function startRecording() {
         // Clear previous text
         recognizedText = '';
+        detectedLanguage = '';
         bengaliTextElement.textContent = '';
         englishTextElement.textContent = '';
         
@@ -127,20 +158,33 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Process the recognized text
             if (recognizedText.trim()) {
-                // Bengali text is already displayed in real-time
-                
-                // Translate to English if toggle is on
+                // Translate based on detected language
                 if (translateToggle.checked) {
                     statusIndicator.textContent = 'Translating...';
-                    translateText(recognizedText.trim(), 'bn', 'en')
-                        .then(englishText => {
-                            englishTextElement.textContent = englishText;
-                            statusIndicator.textContent = 'Ready';
-                        })
-                        .catch(error => {
-                            console.error('Translation error:', error);
-                            statusIndicator.textContent = 'Translation error: ' + error.message;
-                        });
+                    
+                    if (detectedLanguage === 'bn') {
+                        // Bengali to English translation
+                        translateText(recognizedText.trim(), 'bn', 'en')
+                            .then(englishText => {
+                                englishTextElement.textContent = englishText;
+                                statusIndicator.textContent = 'Ready';
+                            })
+                            .catch(error => {
+                                console.error('Translation error:', error);
+                                statusIndicator.textContent = 'Translation error: ' + error.message;
+                            });
+                    } else {
+                        // English to Bengali translation
+                        translateText(recognizedText.trim(), 'en', 'bn')
+                            .then(bengaliText => {
+                                bengaliTextElement.textContent = bengaliText;
+                                statusIndicator.textContent = 'Ready';
+                            })
+                            .catch(error => {
+                                console.error('Translation error:', error);
+                                statusIndicator.textContent = 'Translation error: ' + error.message;
+                            });
+                    }
                 } else {
                     statusIndicator.textContent = 'Ready';
                 }
@@ -230,19 +274,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     translateToggle.addEventListener('change', () => {
-        if (translateToggle.checked && bengaliTextElement.textContent.trim()) {
+        if (translateToggle.checked && recognizedText.trim()) {
             statusIndicator.textContent = 'Translating...';
-            translateText(bengaliTextElement.textContent, 'bn', 'en')
-                .then(englishText => {
-                    englishTextElement.textContent = englishText;
-                    statusIndicator.textContent = 'Ready';
-                })
-                .catch(error => {
-                    console.error('Translation error:', error);
-                    statusIndicator.textContent = 'Translation error: ' + error.message;
-                });
+            
+            // Translate based on detected language
+            if (detectedLanguage === 'bn') {
+                translateText(recognizedText.trim(), 'bn', 'en')
+                    .then(englishText => {
+                        englishTextElement.textContent = englishText;
+                        statusIndicator.textContent = 'Ready';
+                    })
+                    .catch(error => {
+                        console.error('Translation error:', error);
+                        statusIndicator.textContent = 'Translation error: ' + error.message;
+                    });
+            } else {
+                translateText(recognizedText.trim(), 'en', 'bn')
+                    .then(bengaliText => {
+                        bengaliTextElement.textContent = bengaliText;
+                        statusIndicator.textContent = 'Ready';
+                    })
+                    .catch(error => {
+                        console.error('Translation error:', error);
+                        statusIndicator.textContent = 'Translation error: ' + error.message;
+                    });
+            }
         } else if (!translateToggle.checked) {
-            englishTextElement.textContent = '';
+            // Clear the translated text when toggle is turned off
+            if (detectedLanguage === 'bn') {
+                englishTextElement.textContent = '';
+            } else {
+                bengaliTextElement.textContent = '';
+            }
         }
     });
     
@@ -256,19 +319,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add test function for direct input processing
     window.processDirectInput = function(text) {
-        bengaliTextElement.textContent = text.trim();
+        // Detect language of the input text
+        const lang = detectLanguage(text);
         
+        // Set the text in the appropriate element
+        if (lang === 'bn') {
+            bengaliTextElement.textContent = text.trim();
+        } else {
+            englishTextElement.textContent = text.trim();
+        }
+        
+        // Translate if toggle is on
         if (translateToggle.checked) {
             statusIndicator.textContent = 'Translating...';
-            translateText(text.trim(), 'bn', 'en')
-                .then(englishText => {
-                    englishTextElement.textContent = englishText;
-                    statusIndicator.textContent = 'Ready';
-                })
-                .catch(error => {
-                    console.error('Translation error:', error);
-                    statusIndicator.textContent = 'Translation error: ' + error.message;
-                });
+            
+            if (lang === 'bn') {
+                translateText(text.trim(), 'bn', 'en')
+                    .then(englishText => {
+                        englishTextElement.textContent = englishText;
+                        statusIndicator.textContent = 'Ready';
+                    })
+                    .catch(error => {
+                        console.error('Translation error:', error);
+                        statusIndicator.textContent = 'Translation error: ' + error.message;
+                    });
+            } else {
+                translateText(text.trim(), 'en', 'bn')
+                    .then(bengaliText => {
+                        bengaliTextElement.textContent = bengaliText;
+                        statusIndicator.textContent = 'Ready';
+                    })
+                    .catch(error => {
+                        console.error('Translation error:', error);
+                        statusIndicator.textContent = 'Translation error: ' + error.message;
+                    });
+            }
         }
     };
 }); 
