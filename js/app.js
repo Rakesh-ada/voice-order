@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRecording = false;
     let rawBengaliText = ''; // Stores ONLY Bengali raw input
     let collectingMode = true; // When true, only collect audio without processing
+    
+    // Gemini API key
+    const GEMINI_API_KEY = 'AIzaSyDjonLXdO1u8KdXllXSiAsZB0VFXG2iRbU';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    
+    // Cache for translations to optimize API usage
+    const translationCache = new Map();
 
     // 1. Setup Bengali-only Speech Recognition
     function setupBengaliRecognition() {
@@ -208,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return result.join(' ');
     }
 
-    // 3. Translate Bengali to English using Chrome's built-in translation capabilities
+    // 3. Translate Bengali to English using Gemini API
     async function translateBengaliToEnglish(bengaliText) {
         if (!bengaliText.trim()) {
             console.log('No text to translate');
@@ -219,17 +226,35 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Translating text:', bengaliText);
         
         try {
-            // Use LibreTranslate API (free and open-source translation API)
-            const translatedText = await fetchTranslation(bengaliText);
+            // Check cache first to optimize API usage
+            if (translationCache.has(bengaliText)) {
+                console.log('Using cached translation');
+                englishTextElement.textContent = translationCache.get(bengaliText);
+                statusIndicator.textContent = 'Translation complete (cached)';
+                return;
+            }
+            
+            // Call Gemini API for translation
+            const translatedText = await callGeminiAPI(bengaliText);
             englishTextElement.textContent = translatedText;
             statusIndicator.textContent = 'Translation complete';
+            
+            // Cache the result for future use
+            translationCache.set(bengaliText, translatedText);
+            
+            // Limit cache size to prevent memory issues
+            if (translationCache.size > 50) {
+                // Remove oldest entry
+                const firstKey = translationCache.keys().next().value;
+                translationCache.delete(firstKey);
+            }
         } catch (error) {
             console.error('Translation error:', error);
             statusIndicator.textContent = 'Translation failed: ' + error.message;
             
-            // Fallback to dictionary translation if API fails
+            // Fallback to Google Translate API if Gemini fails
             try {
-                const fallbackText = await backupTranslation(bengaliText);
+                const fallbackText = await fetchGoogleTranslation(bengaliText);
                 englishTextElement.textContent = fallbackText;
                 statusIndicator.textContent = 'Basic translation complete (fallback)';
             } catch (fallbackError) {
@@ -238,18 +263,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Free translation API fetch (using LibreTranslate)
-    async function fetchTranslation(text) {
+    // Call Gemini API for translation
+    async function callGeminiAPI(text) {
         try {
-            // First try browser's built-in translation capabilities if available
-            if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.detectLanguage) {
-                return new Promise((resolve) => {
-                    // This is just a check - Chrome's extension API isn't available in web pages
-                    resolve('Chrome translation API is only available in extensions');
-                });
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `Translate this Bengali text to English accurately, maintaining the original meaning and context: "${text}"`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        topP: 0.8,
+                        topK: 40
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Gemini API Error Response:', errorData);
+                throw new Error(`Gemini API error: ${response.status}`);
             }
+
+            const data = await response.json();
+            console.log('Gemini API Response:', data);
+
+            if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                throw new Error('Invalid response format from Gemini API');
+            }
+
+            // Extract just the translation, ignoring any explanatory text
+            let translatedText = data.candidates[0].content.parts[0].text;
             
-            // Use LibreTranslate public API
+            // Clean up the result - remove quotation marks and explanatory text
+            translatedText = translatedText.replace(/^["']|["']$/g, '');
+            translatedText = translatedText.replace(/^Translation: /i, '');
+            
+            return translatedText.trim();
+        } catch (error) {
+            console.error('Gemini API call failed:', error);
+            throw error;
+        }
+    }
+    
+    // Google Translate API as fallback
+    async function fetchGoogleTranslation(text) {
+        try {
             const response = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=bn&tl=en&dt=t&q=' + encodeURI(text));
             
             if (!response.ok) {
@@ -270,40 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return translation || 'Translation unavailable';
         } catch (error) {
-            console.error('Translation API error:', error);
+            console.error('Google Translation API error:', error);
             throw new Error('Failed to connect to translation service');
         }
-    }
-    
-    // Backup translation using dictionary
-    async function backupTranslation(bengaliText) {
-        // This function implements a simple dictionary-based translation
-        // as a fallback when the API is unavailable
-        
-        // Simplified dictionary with only the most essential words
-        const essentialWords = {
-            'আমি': 'I',
-            'চাই': 'want',
-            'খাবার': 'food',
-            'পানি': 'water',
-            'ধন্যবাদ': 'thank you'
-        };
-        
-        const words = bengaliText.split(/\s+/);
-        const translatedWords = [];
-        
-        for (const word of words) {
-            const cleanWord = word.replace(/[,.!?()।'"]/g, '').trim();
-            if (!cleanWord) continue;
-            
-            if (essentialWords[cleanWord]) {
-                translatedWords.push(essentialWords[cleanWord]);
-            } else {
-                translatedWords.push(cleanWord);
-            }
-        }
-        
-        return translatedWords.join(' ');
     }
 
     // Recording control functions
