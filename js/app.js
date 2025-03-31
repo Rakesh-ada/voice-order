@@ -575,7 +575,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Format this product order text into a structured list with sizes and quantities. Extract size numbers (like S1, S2), dimensions (like 8x10, 11x14) and quantities (like 10 kg, 5 pieces). Format as: "S1:\n\n- 8x10: 10 kg\n- 16x20: 5 kg\n".\nIf there are no size numbers, just list items with bullet points. If no dimensions, use standard photo sizes (8x10, 11x14, etc.).\nOnly output the formatted order text without explanations or additional text.\nInput: "${text}"`
+                            text: `Format this product order text into a structured list with product types, sizes and quantities.
+
+1. Identify product types like S1, China, Blackloose, LP, Goutam Roto, etc.
+2. Extract dimensions (like 8x10, 11x14) and quantities (like 10 kg, 5 pieces, 20p).
+3. Format as a hierarchical list with product types as main headings, and dimensions/quantities as bullet points.
+
+Example format:
+S1
+
+- 8x10: 10kg
+- 9x12: 30kg
+- 11x14: 10kg
+
+China
+
+- 9x12: 10kg
+- 11x14: 10kg
+
+Format the following text clearly with line breaks between product types and proper indentation:
+"${text}"`
                         }]
                     }],
                     generationConfig: {
@@ -609,8 +628,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace(/^Here is the formatted order:\s*/i, '') // Remove "Here is the formatted order:" prefix
                 .replace(/^Order:\s*/i, '')                     // Remove "Order:" prefix
                 .replace(/^Output:\s*/i, '')                    // Remove "Output:" prefix
+                .replace(/^Formatted text:\s*/i, '')            // Remove "Formatted text:" prefix
                 .replace(/^\s*\n+/g, '')                        // Remove empty lines at beginning
+                .replace(/\n{3,}/g, '\n\n')                     // Replace 3+ newlines with 2
                 .replace(/^[\s\-–—•*]+/, '');                   // Remove leading spaces, dashes, bullets
+            
+            // Ensure "pieces" or "p" is used consistently
+            formattedOrder = formattedOrder
+                .replace(/(\d+)\s*pieces/gi, '$1 pieces')
+                .replace(/(\d+)\s*p(?!\w)/gi, '$1 pieces');
 
             return formattedOrder.trim();
         } catch (error) {
