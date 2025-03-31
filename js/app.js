@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Recognition started');
                 statusIndicator.textContent = 'Listening for Bengali...';
                 recordButton.classList.add('recording');
-                recordButton.innerHTML = '<i class="fas fa-stop"></i> Stop';
+                recordButton.innerHTML = '<i class="fas fa-stop"></i>';
                 collectingMode = true; // Start in collecting mode
                 // Clear the text display when starting new recording
                 bengaliTextElement.textContent = '';
