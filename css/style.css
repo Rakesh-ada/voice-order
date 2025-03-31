@@ -1,16 +1,16 @@
 :root {
-    --primary-color: #2A004E;  /* Dark purple */
-    --secondary-color: #500073; /* Medium purple */
-    --accent-color: #C62300;   /* Dark red/orange */
-    --warning-color: #F14A00;  /* Bright orange */
+    --primary-color: #1D2B53;  /* Dark blue */
+    --secondary-color: #7E2553; /* Purple */
+    --accent-color: #FF004D;   /* Bright pink/red */
+    --warning-color: #FAEF5D;  /* Yellow */
     --text-color: #ffffff;     /* White text for better contrast */
-    --light-bg: #2A004E;       /* Dark purple background */
-    --card-bg: #500073;        /* Medium purple card background */
+    --light-bg: #1D2B53;       /* Dark blue background */
+    --card-bg: #7E2553;        /* Purple card background */
     --header-color: #ffffff;   /* White for headers */
     --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     --border-radius: 12px;
-    --border-color: #F14A00;   /* Bright orange border color */
+    --border-color: #FF004D;   /* Bright pink/red border color */
     --status-color: #e3f2fd;   /* Light blue for status text */
 }
 
@@ -25,7 +25,7 @@ body {
     line-height: 1.6;
     color: var(--text-color);
     background-color: var(--light-bg);
-    background-image: linear-gradient(to bottom right, #500073, #2A004E);
+    background-image: linear-gradient(to bottom right, #7E2553, #1D2B53);
     -webkit-tap-highlight-color: transparent;
     padding: 0;
     margin: 0;
@@ -45,7 +45,7 @@ header {
     text-align: center;
     padding: 15px 0;
     border-bottom: 2px solid;
-    border-image: linear-gradient(to right, #2A004E, #500073, #C62300, #F14A00) 1;
+    border-image: linear-gradient(to right, #1D2B53, #7E2553, #FF004D, #FAEF5D) 1;
     margin-bottom: 25px;
 }
 
@@ -103,7 +103,7 @@ main {
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, #2A004E, #500073, #C62300, #F14A00);
+    background: linear-gradient(45deg, #1D2B53, #7E2553, #FF004D, #FAEF5D);
     background-size: 400% 400%;
     z-index: -1;
     border-radius: 50%;
@@ -116,21 +116,21 @@ main {
 }
 
 .primary {
-    background-color: #C62300;
+    background-color: #FF004D;
     color: white;
 }
 
 .primary:hover {
-    background-color: #F14A00;
+    background-color: #ff3370;
 }
 
 .secondary {
-    background-color: #500073;
+    background-color: #7E2553;
     color: white;
 }
 
 .secondary:hover {
-    background-color: #6A0097;
+    background-color: #9c3267;
 }
 
 .recording {
@@ -198,7 +198,7 @@ main {
     font-weight: bold;
     color: white;
     font-size: 0.9rem;
-    background-color: rgba(13, 71, 161, 0.7);
+    background-color: rgba(29, 43, 83, 0.7);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
 }
@@ -311,7 +311,7 @@ main {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #2A004E;
+    background-color: #1D2B53;
     transition: .4s;
     border-radius: 34px;
 }
@@ -329,7 +329,7 @@ main {
 }
 
 input:checked + .slider {
-    background-color: #C62300;
+    background-color: #FF004D;
 }
 
 input:checked + .slider:before {
@@ -458,13 +458,13 @@ footer p {
 
 /* Format Order Button */
 #formatOrderButton {
-    background-color: var(--warning-color);
-    color: #000;
+    background-color: #FAEF5D;
+    color: #1D2B53; /* Dark text on yellow background for better readability */
     margin-left: 10px;
 }
 
 #formatOrderButton:hover {
-    background-color: #ffc107;
+    background-color: #fff593;
 }
 
 /* Clean Repetition Button */
@@ -515,7 +515,7 @@ footer p {
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, #2A004E, #500073, #C62300, #F14A00);
+    background: linear-gradient(45deg, #1D2B53, #7E2553, #FF004D, #FAEF5D);
     background-size: 400% 400%;
     z-index: -1;
     border-radius: 10px;
