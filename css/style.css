@@ -337,9 +337,12 @@ input:checked + .slider:before {
 }
 
 .toggle-label {
-    margin-left: 70px;
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
     font-weight: bold;
-    vertical-align: middle;
 }
 
 footer {
@@ -495,7 +498,6 @@ footer p {
     width: 30px;
     height: 30px;
     margin-right: 10px;
-    animation: spin 20s linear infinite;
 }
 
 @keyframes spin {
