@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cleanTranscript = cleanupRepeatedWords(transcript);
                     recognizedText += ' ' + cleanTranscript;
                     statusIndicator.textContent = 'Recognized: ' + cleanTranscript;
+                    
+                    // Update the Bengali text display in real-time
+                    updateBengaliDisplay(recognizedText.trim());
                 } else {
                     statusIndicator.textContent = 'Listening... ' + transcript;
                 }
@@ -108,14 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Process the recognized text
             if (recognizedText.trim()) {
-                // Format the text as a business order
-                const formattedBengaliText = formatAsBusinessOrder(recognizedText);
-                bengaliTextElement.textContent = formattedBengaliText;
+                // Display the recognized Bengali text directly
+                bengaliTextElement.textContent = recognizedText.trim();
                 
                 // Translate to English if toggle is on
                 if (translateToggle.checked) {
                     statusIndicator.textContent = 'Translating...';
-                    translateText(formattedBengaliText, 'bn', 'en')
+                    translateText(recognizedText.trim(), 'bn', 'en')
                         .then(englishText => {
                             englishTextElement.textContent = englishText;
                             statusIndicator.textContent = 'Ready';
@@ -318,11 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to translate text using Google Translate (client-side approach)
     async function translateText(text, sourceLang, targetLang) {
         try {
-            // Remove markdown formatting for translation
-            const plainText = text
-                .replace(/\*\*বাংলা অর্ডার\*\*\n\n/, '')
-                .replace(/^\d+\.\s/gm, '')
-                .replace(/\n(তারিখ|সময়):.*$/gm, '');
+            // Use raw text for translation without formatting
+            const plainText = text.trim();
             
             // Use the free client-side translation approach
             const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(plainText)}`;
@@ -352,23 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('No translation returned');
             }
             
-            // Format the translated text similar to source
-            const translatedLines = translatedText.split(/[.!?]+/).filter(line => line.trim() !== '');
-            
-            let formattedTranslation = '**English Translation**\n\n';
-            
-            translatedLines.forEach((line, index) => {
-                const trimmedLine = line.trim();
-                if (trimmedLine) {
-                    formattedTranslation += `${index + 1}. ${trimmedLine}\n`;
-                }
-            });
-            
-            // Add timestamp
-            const now = new Date();
-            formattedTranslation += `\nDate: ${now.toLocaleDateString()}\nTime: ${now.toLocaleTimeString()}`;
-            
-            return formattedTranslation;
+            return translatedText;
         } catch (error) {
             console.error('Translation error:', error);
             // Provide a more user-friendly error message
@@ -441,11 +424,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add test function for direct input processing
     window.processDirectInput = function(text) {
-        bengaliTextElement.textContent = formatAsBusinessOrder(text);
+        bengaliTextElement.textContent = text.trim();
         
         if (translateToggle.checked) {
             statusIndicator.textContent = 'Translating...';
-            translateText(bengaliTextElement.textContent, 'bn', 'en')
+            translateText(text.trim(), 'bn', 'en')
                 .then(englishText => {
                     englishTextElement.textContent = englishText;
                     statusIndicator.textContent = 'Ready';
@@ -473,5 +456,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         return result.join(' ');
+    }
+    
+    // Function to update the Bengali display with the recognized text
+    function updateBengaliDisplay(text) {
+        if (!text) return;
+        
+        // Simply display the text with minimal formatting
+        bengaliTextElement.textContent = text;
     }
 }); 
