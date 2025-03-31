@@ -486,29 +486,6 @@ footer p {
     box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 }
 
-/* React logo styling */
-.logo-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 5px;
-}
-
-.react-logo {
-    width: 30px;
-    height: 30px;
-    margin-right: 10px;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 /* Create the RGB gradient border effect */
 .result-box::before {
     content: '';
