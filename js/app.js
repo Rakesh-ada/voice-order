@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variables
     let recognition;
     let isRecording = false;
-    let recognizedText = '';
+    let rawRecognizedText = ''; // Stores EXACT speech-to-text output
     let detectedLanguage = '';
     
     // Gemini API key
@@ -22,30 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup Web Speech API
     function setupSpeechRecognition() {
         try {
-            // Check if the browser supports the Web Speech API
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                throw new Error('Speech recognition not supported in this browser. Try Chrome, Edge, or Safari.');
+                throw new Error('Speech recognition not supported in this browser.');
             }
             
-            // Initialize the speech recognition
             recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
-            
-            // Configure recognition - start with Bengali as default
             recognition.continuous = true;
             recognition.interimResults = true;
+            recognition.lang = 'bn-IN,en-US'; // Default to bilingual mode
             
-            // Initially detect language automatically
-            recognition.lang = 'bn-IN,en-US'; // Support both Bengali and English
-            
-            // Handle results
             recognition.onresult = (event) => {
                 let interimTranscript = '';
                 let finalTranscript = '';
 
-                // Process results
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
-                    
                     if (event.results[i].isFinal) {
                         finalTranscript += transcript;
                     } else {
@@ -53,45 +44,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // Update for interim results
+                // Update UI for live feedback
                 if (interimTranscript) {
                     statusIndicator.textContent = 'Listening... ' + interimTranscript;
                 }
                 
-                // Update for final results
+                // Process finalized speech
                 if (finalTranscript) {
-                    // Add space if this isn't the first word
-                    if (recognizedText) recognizedText += ' ';
-                    recognizedText += finalTranscript;
+                    // Store RAW recognized text (no formatting)
+                    rawRecognizedText += (rawRecognizedText ? ' ' : '') + finalTranscript.trim();
                     
-                    // Try to detect language from recognized text
-                    detectLanguage(recognizedText);
+                    // Detect language (Bengali or English)
+                    detectedLanguage = detectLanguage(rawRecognizedText);
                     
-                    // Update primary display based on detected language
+                    // Update UI with raw text
                     if (detectedLanguage === 'bn') {
-                        bengaliTextElement.textContent = recognizedText;
+                        bengaliTextElement.textContent = rawRecognizedText;
+                        englishTextElement.textContent = ''; // Clear previous translation
                     } else {
-                        englishTextElement.textContent = recognizedText;
+                        englishTextElement.textContent = rawRecognizedText;
+                        bengaliTextElement.textContent = ''; // Clear previous translation
                     }
                     
                     statusIndicator.textContent = 'Recognized: ' + finalTranscript + ' (Detected: ' + (detectedLanguage === 'bn' ? 'Bengali' : 'English') + ')';
+                    
+                    // Auto-translate if toggle is on
+                    if (translateToggle.checked) {
+                        handleTranslation();
+                    }
                 }
             };
             
-            // Handle errors
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 statusIndicator.textContent = 'Error: ' + event.error;
                 stopRecording();
             };
             
-            // Handle end of recognition
             recognition.onend = () => {
-                if (isRecording) {
-                    // If we're still supposed to be recording, restart recognition
-                    // (this handles automatic stops by the browser)
-                    recognition.start();
-                }
+                if (isRecording) recognition.start(); // Auto-restart if still recording
             };
             
             return true;
@@ -104,42 +95,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Detect language (Bengali or English)
     function detectLanguage(text) {
-        // Bengali Unicode range: \u0980-\u09FF
         const bengaliPattern = /[\u0980-\u09FF]/;
-        
-        // If the text contains Bengali characters, consider it Bengali
-        if (bengaliPattern.test(text)) {
-            detectedLanguage = 'bn';
-            // Update recognition language to Bengali for better accuracy
-            recognition.lang = 'bn-IN';
-        } else {
-            detectedLanguage = 'en';
-            // Update recognition language to English for better accuracy
-            recognition.lang = 'en-US';
-        }
-        
-        return detectedLanguage;
+        return bengaliPattern.test(text) ? 'bn' : 'en';
     }
     
-    // Toggle recording function
+    // Toggle recording
     function toggleRecording() {
         if (isRecording) {
             stopRecording();
             recordButton.innerHTML = '<span class="icon">🎤</span> Record';
-            recordButton.classList.remove('secondary', 'recording');
-            recordButton.classList.add('primary');
+            recordButton.classList.remove('recording');
         } else {
             startRecording();
             recordButton.innerHTML = '<span class="icon">⏹️</span> Stop';
-            recordButton.classList.remove('primary');
-            recordButton.classList.add('secondary', 'recording');
+            recordButton.classList.add('recording');
         }
     }
     
-    // Start recording function
+    // Start recording
     function startRecording() {
-        // Clear previous text
-        recognizedText = '';
+        rawRecognizedText = ''; // Reset on new recording
         detectedLanguage = '';
         bengaliTextElement.textContent = '';
         englishTextElement.textContent = '';
@@ -154,155 +129,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Stop recording function
+    // Stop recording
     function stopRecording() {
         try {
             recognition.stop();
             isRecording = false;
-            statusIndicator.textContent = 'Processing...';
-            
-            // Process the recognized text
-            if (recognizedText.trim()) {
-                // Translate based on detected language
-                if (translateToggle.checked) {
-                    statusIndicator.textContent = 'Translating...';
-                    
-                    if (detectedLanguage === 'bn') {
-                        // Bengali to English translation
-                        translateText(recognizedText.trim(), 'bn', 'en')
-                            .then(englishText => {
-                                englishTextElement.textContent = englishText;
-                                statusIndicator.textContent = 'Ready';
-                            })
-                            .catch(error => {
-                                console.error('Translation error:', error);
-                                statusIndicator.textContent = 'Translation error: ' + error.message;
-                            });
-                    } else {
-                        // English to Bengali translation
-                        translateText(recognizedText.trim(), 'en', 'bn')
-                            .then(bengaliText => {
-                                bengaliTextElement.textContent = bengaliText;
-                                statusIndicator.textContent = 'Ready';
-                            })
-                            .catch(error => {
-                                console.error('Translation error:', error);
-                                statusIndicator.textContent = 'Translation error: ' + error.message;
-                            });
-                    }
-                } else {
-                    statusIndicator.textContent = 'Ready';
-                }
-            } else {
-                statusIndicator.textContent = 'No speech detected. Please try again.';
-            }
+            statusIndicator.textContent = 'Ready';
         } catch (error) {
             console.error('Stop recording error:', error);
             statusIndicator.textContent = 'Error stopping recording: ' + error.message;
         }
     }
     
-    // Function to translate text using Gemini API
-    async function translateText(text, sourceLang, targetLang) {
+    // Handle translation (uses rawRecognizedText without modification)
+    async function handleTranslation() {
+        if (!rawRecognizedText.trim()) return;
+        
+        statusIndicator.textContent = 'Translating...';
+        
         try {
-            // Create the prompt for Gemini to translate the text
-            let prompt;
-            if (sourceLang === 'bn' && targetLang === 'en') {
-                prompt = `Translate the following Bengali text to English. Return only the translation without any additional text or explanations: "${text}"`;
-            } else if (sourceLang === 'en' && targetLang === 'bn') {
-                prompt = `Translate the following English text to Bengali. Return only the translation without any additional text or explanations: "${text}"`;
+            const sourceLang = detectedLanguage;
+            const targetLang = detectedLanguage === 'bn' ? 'en' : 'bn';
+            
+            const translatedText = await translateText(rawRecognizedText, sourceLang, targetLang);
+            
+            if (targetLang === 'en') {
+                englishTextElement.textContent = translatedText;
             } else {
-                throw new Error(`Unsupported language pair: ${sourceLang} to ${targetLang}`);
+                bengaliTextElement.textContent = translatedText;
             }
             
-            // Prepare the request body for Gemini API
-            const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: prompt
-                            }
-                        ]
-                    }
-                ]
-            };
-            
-            // Send the request to Gemini API
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`Gemini API request failed with status: ${response.status}, details: ${JSON.stringify(errorData)}`);
-            }
-            
-            const data = await response.json();
-            
-            // Extract the translated text from the Gemini API response
-            if (data.candidates && data.candidates.length > 0 && 
-                data.candidates[0].content && 
-                data.candidates[0].content.parts && 
-                data.candidates[0].content.parts.length > 0) {
-                
-                const translatedText = data.candidates[0].content.parts[0].text.trim();
-                return translatedText;
-            }
-            
-            throw new Error('No translation returned from Gemini API');
+            statusIndicator.textContent = 'Translation complete';
         } catch (error) {
             console.error('Translation error:', error);
-            
-            // Fallback to client-side Google Translate if Gemini API fails
-            try {
-                console.log('Falling back to Google Translate API');
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-                
-                const fallbackResponse = await fetch(url);
-                
-                if (!fallbackResponse.ok) {
-                    throw new Error(`Fallback translation request failed with status: ${fallbackResponse.status}`);
-                }
-                
-                const fallbackData = await fallbackResponse.json();
-                
-                // The response format is a nested array - extract the translated text
-                let translatedText = '';
-                
-                // Each item in the first array contains a translation segment
-                if (fallbackData && fallbackData[0]) {
-                    // Concatenate all translation segments
-                    for (const segment of fallbackData[0]) {
-                        if (segment[0]) {
-                            translatedText += segment[0];
-                        }
-                    }
-                }
-                
-                if (!translatedText) {
-                    throw new Error('No translation returned from fallback service');
-                }
-                
-                return translatedText;
-            } catch (fallbackError) {
-                console.error('Fallback translation error:', fallbackError);
-                throw new Error(`Translation failed: ${error.message}. Fallback also failed: ${fallbackError.message}`);
-            }
+            statusIndicator.textContent = 'Translation failed';
         }
     }
     
-    // Function to copy text to clipboard
+    // Translate text (Gemini API) - Input text remains UNMODIFIED
+    async function translateText(text, sourceLang, targetLang) {
+        const prompt = `Translate this EXACTLY without adding/removing content (${sourceLang} → ${targetLang}):\n\n"${text}"`;
+        
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || text; // Fallback to original if error
+    }
+    
+    // Format order (optional post-processing)
+    async function formatBusinessOrder() {
+        if (!rawRecognizedText.trim()) {
+            statusIndicator.textContent = 'No text to format';
+            return;
+        }
+        
+        statusIndicator.textContent = 'Formatting order...';
+        
+        try {
+            const prompt = `Format this business order clearly (keep ALL original content):\n\n${rawRecognizedText}`;
+            
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            
+            const data = await response.json();
+            const formattedText = data.candidates?.[0]?.content?.parts?.[0]?.text || rawRecognizedText;
+            
+            // Update UI with formatted text
+            if (detectedLanguage === 'bn') {
+                bengaliTextElement.textContent = formattedText;
+            } else {
+                englishTextElement.textContent = formattedText;
+            }
+            
+            statusIndicator.textContent = 'Order formatted';
+        } catch (error) {
+            console.error('Formatting error:', error);
+            statusIndicator.textContent = 'Formatting failed';
+        }
+    }
+    
+    // Copy to clipboard
     async function copyToClipboard(text) {
         try {
             await navigator.clipboard.writeText(text);
             return true;
         } catch (error) {
-            console.error('Clipboard error:', error);
+            console.error('Copy failed:', error);
             return false;
         }
     }
@@ -312,109 +231,33 @@ document.addEventListener('DOMContentLoaded', () => {
     
     copyBengaliButton.addEventListener('click', () => {
         copyToClipboard(bengaliTextElement.textContent)
-            .then(() => {
-                copyBengaliButton.textContent = 'Copied!';
-                setTimeout(() => {
-                    copyBengaliButton.innerHTML = '<span class="icon">📋</span> Copy Bengali';
-                }, 2000);
+            .then(success => {
+                if (success) {
+                    copyBengaliButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyBengaliButton.innerHTML = '<span class="icon">📋</span> Copy Bengali';
+                    }, 2000);
+                }
             });
     });
     
     copyEnglishButton.addEventListener('click', () => {
         copyToClipboard(englishTextElement.textContent)
-            .then(() => {
-                copyEnglishButton.textContent = 'Copied!';
-                setTimeout(() => {
-                    copyEnglishButton.innerHTML = '<span class="icon">📋</span> Copy English';
-                }, 2000);
-            });
-    });
-    
-    // Format Order button event listener
-    formatOrderButton.addEventListener('click', () => {
-        // Get the appropriate text based on detected language
-        const textToFormat = detectedLanguage === 'bn' ? 
-            bengaliTextElement.textContent : 
-            englishTextElement.textContent;
-            
-        if (!textToFormat.trim()) {
-            statusIndicator.textContent = 'No text to format. Please record or enter text first.';
-            return;
-        }
-        
-        formatBusinessOrder(textToFormat, detectedLanguage)
-            .then(formattedText => {
-                // Update the appropriate text element
-                if (detectedLanguage === 'bn') {
-                    bengaliTextElement.textContent = formattedText;
-                    
-                    // If translation is enabled, translate the formatted text
-                    if (translateToggle.checked) {
-                        translateText(formattedText, 'bn', 'en')
-                            .then(englishText => {
-                                englishTextElement.textContent = englishText;
-                                statusIndicator.textContent = 'Order formatted';
-                            })
-                            .catch(error => {
-                                console.error('Translation error:', error);
-                                statusIndicator.textContent = 'Error translating formatted order';
-                            });
-                    } else {
-                        statusIndicator.textContent = 'Order formatted';
-                    }
-                } else {
-                    englishTextElement.textContent = formattedText;
-                    
-                    // If translation is enabled, translate the formatted text
-                    if (translateToggle.checked) {
-                        translateText(formattedText, 'en', 'bn')
-                            .then(bengaliText => {
-                                bengaliTextElement.textContent = bengaliText;
-                                statusIndicator.textContent = 'Order formatted';
-                            })
-                            .catch(error => {
-                                console.error('Translation error:', error);
-                                statusIndicator.textContent = 'Error translating formatted order';
-                            });
-                    } else {
-                        statusIndicator.textContent = 'Order formatted';
-                    }
+            .then(success => {
+                if (success) {
+                    copyEnglishButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyEnglishButton.innerHTML = '<span class="icon">📋</span> Copy English';
+                    }, 2000);
                 }
-            })
-            .catch(error => {
-                console.error('Formatting error:', error);
-                statusIndicator.textContent = 'Error formatting order: ' + error.message;
             });
     });
     
     translateToggle.addEventListener('change', () => {
-        if (translateToggle.checked && recognizedText.trim()) {
-            statusIndicator.textContent = 'Translating...';
-            
-            // Translate based on detected language
-            if (detectedLanguage === 'bn') {
-                translateText(recognizedText.trim(), 'bn', 'en')
-                    .then(englishText => {
-                        englishTextElement.textContent = englishText;
-                        statusIndicator.textContent = 'Ready';
-                    })
-                    .catch(error => {
-                        console.error('Translation error:', error);
-                        statusIndicator.textContent = 'Translation error: ' + error.message;
-                    });
-            } else {
-                translateText(recognizedText.trim(), 'en', 'bn')
-                    .then(bengaliText => {
-                        bengaliTextElement.textContent = bengaliText;
-                        statusIndicator.textContent = 'Ready';
-                    })
-                    .catch(error => {
-                        console.error('Translation error:', error);
-                        statusIndicator.textContent = 'Translation error: ' + error.message;
-                    });
-            }
-        } else if (!translateToggle.checked) {
-            // Clear the translated text when toggle is turned off
+        if (translateToggle.checked && rawRecognizedText.trim()) {
+            handleTranslation();
+        } else {
+            // Clear translation when toggle is off
             if (detectedLanguage === 'bn') {
                 englishTextElement.textContent = '';
             } else {
@@ -423,151 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Initialize the app
+    formatOrderButton.addEventListener('click', formatBusinessOrder);
+    
+    // Initialize
     if (setupSpeechRecognition()) {
         statusIndicator.textContent = 'Ready';
     } else {
         recordButton.disabled = true;
-        statusIndicator.textContent = 'Speech recognition not available';
+        statusIndicator.textContent = 'Speech recognition unavailable';
     }
-    
-    // Add test function for direct input processing
-    window.processDirectInput = function(text) {
-        // Detect language of the input text
-        const lang = detectLanguage(text);
-        
-        // Set the text in the appropriate element
-        if (lang === 'bn') {
-            bengaliTextElement.textContent = text.trim();
-        } else {
-            englishTextElement.textContent = text.trim();
-        }
-        
-        // Translate if toggle is on
-        if (translateToggle.checked) {
-            statusIndicator.textContent = 'Translating...';
-            
-            if (lang === 'bn') {
-                translateText(text.trim(), 'bn', 'en')
-                    .then(englishText => {
-                        englishTextElement.textContent = englishText;
-                        statusIndicator.textContent = 'Ready';
-                    })
-                    .catch(error => {
-                        console.error('Translation error:', error);
-                        statusIndicator.textContent = 'Translation error: ' + error.message;
-                    });
-            } else {
-                translateText(text.trim(), 'en', 'bn')
-                    .then(bengaliText => {
-                        bengaliTextElement.textContent = bengaliText;
-                        statusIndicator.textContent = 'Ready';
-                    })
-                    .catch(error => {
-                        console.error('Translation error:', error);
-                        statusIndicator.textContent = 'Translation error: ' + error.message;
-                    });
-            }
-        }
-    };
-
-    // Function to format business order using Gemini AI
-    async function formatBusinessOrder(text, language) {
-        try {
-            statusIndicator.textContent = 'Formatting order...';
-            
-            // Create the prompt for Gemini to format the order
-            let prompt;
-            if (language === 'bn') {
-                prompt = `Format the following Bengali business order text into a structured, clean business order format.
-
-Important:
-1. Fix any repetitions (like "তুমি তুমি তুমি কেমন তুমি কেমন আছো") by removing redundant words.
-2. Extract and organize the following information if present:
-   - Customer name and contact details
-   - Order number/ID (if any)
-   - Ordered items with quantities and prices
-   - Delivery address or pickup details
-   - Payment method
-   - Special instructions
-
-3. Format the output as follows:
-   - Use clear sections with headings
-   - List items in a structured way
-   - Add appropriate line breaks
-   - Calculate totals if prices are mentioned
-
-Return the properly formatted order in Bengali without any explanations or additional text.
-
-Text to format: "${text}"`;
-            } else {
-                prompt = `Format the following English business order text into a structured, clean business order format.
-
-Important:
-1. Fix any repetitions (like "you you you how how are you") by removing redundant words.
-2. Extract and organize the following information if present:
-   - Customer name and contact details
-   - Order number/ID (if any)
-   - Ordered items with quantities and prices
-   - Delivery address or pickup details
-   - Payment method
-   - Special instructions
-
-3. Format the output as follows:
-   - Use clear sections with headings
-   - List items in a structured way
-   - Add appropriate line breaks
-   - Calculate totals if prices are mentioned
-
-Return the properly formatted order without any explanations or additional text.
-
-Text to format: "${text}"`;
-            }
-            
-            // Prepare the request body for Gemini API
-            const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: prompt
-                            }
-                        ]
-                    }
-                ]
-            };
-            
-            // Send the request to Gemini API
-            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`Gemini API request failed with status: ${response.status}, details: ${JSON.stringify(errorData)}`);
-            }
-            
-            const data = await response.json();
-            
-            // Extract the formatted text from the Gemini API response
-            if (data.candidates && data.candidates.length > 0 && 
-                data.candidates[0].content && 
-                data.candidates[0].content.parts && 
-                data.candidates[0].content.parts.length > 0) {
-                
-                const formattedText = data.candidates[0].content.parts[0].text.trim();
-                return formattedText;
-            }
-            
-            throw new Error('No formatted text returned from Gemini API');
-        } catch (error) {
-            console.error('Order formatting error:', error);
-            statusIndicator.textContent = 'Error formatting order: ' + error.message;
-            throw error;
-        }
-    }
-}); 
+});
