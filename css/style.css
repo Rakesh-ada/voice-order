@@ -43,9 +43,10 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 20px;
     padding: 15px 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid;
+    border-image: linear-gradient(to right, #ff0000, #00ff00, #0000ff) 1;
+    margin-bottom: 25px;
 }
 
 h1 {
@@ -73,29 +74,40 @@ main {
 
 .voice-controls {
     display: flex;
-    flex-direction: row;
     justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding: 15px;
-    background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
+    gap: 20px;
+    margin-bottom: 20px;
 }
 
 .btn {
-    padding: 10px 15px;
-    border-radius: 5px;
+    padding: 12px;
+    border-radius: 50%; /* Make buttons circular */
     border: none;
     font-size: 1rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     transition: all 0.3s ease;
+    width: 50px;
+    height: 50px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    background-size: 400% 400%;
+    z-index: -1;
+    border-radius: 50%;
+    animation: rgbBorder 6s ease infinite;
 }
 
 .btn:disabled {
@@ -106,9 +118,6 @@ main {
 .primary {
     background-color: #4CAF50;
     color: white;
-    font-weight: bold;
-    border-radius: 25px;
-    padding: 12px 20px;
 }
 
 .primary:hover {
@@ -118,9 +127,6 @@ main {
 .secondary {
     background-color: #2196F3;
     color: white;
-    font-weight: bold;
-    border-radius: 25px;
-    padding: 12px 20px;
 }
 
 .secondary:hover {
@@ -143,19 +149,30 @@ main {
     }
 }
 
+.btn i {
+    font-size: 1.2rem;
+}
+
 .btn.copy {
     background-color: var(--accent-color);
     color: white;
     margin-top: 10px;
-    width: 100%;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
 
 .btn.install {
     background-color: var(--warning-color);
-    color: #000000; /* Black text for contrast */
-    margin-top: 15px;
-    padding: 10px 15px;
-    width: 100%;
+    color: #000000;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin: 15px auto;
+    display: block;
 }
 
 .btn:active {
@@ -195,7 +212,7 @@ main {
 
 .result-box {
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    border: 2px solid transparent;
     border-radius: 8px;
     padding: 15px;
     margin: 10px 0;
@@ -206,6 +223,7 @@ main {
     line-height: 1.5;
     color: var(--text-color);
     box-shadow: var(--shadow);
+    position: relative;
 }
 
 .result-box:empty {
@@ -277,7 +295,7 @@ main {
     display: inline-block;
     width: 60px;
     height: 30px;
-    margin-right: 70px;
+    margin-right: 10px;
 }
 
 .switch input {
@@ -293,8 +311,9 @@ main {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #555; /* Darker background for off state */
+    background-color: #2196F3;
     transition: .4s;
+    border-radius: 34px;
 }
 
 .slider:before {
@@ -306,36 +325,21 @@ main {
     bottom: 4px;
     background-color: white;
     transition: .4s;
+    border-radius: 50%;
 }
 
 input:checked + .slider {
-    background-color: var(--primary-color);
-}
-
-input:focus + .slider {
-    box-shadow: 0 0 1px var(--primary-color);
+    background-color: #2196F3;
 }
 
 input:checked + .slider:before {
     transform: translateX(30px);
 }
 
-.slider.round {
-    border-radius: 34px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-}
-
 .toggle-label {
-    color: var(--text-color);
+    margin-left: 70px;
     font-weight: bold;
-    position: absolute;
-    right: -80px;
-    top: 5px;
-    white-space: nowrap;
-    font-size: 0.9rem;
+    vertical-align: middle;
 }
 
 footer {
@@ -477,4 +481,55 @@ footer p {
 #cleanRepetitionButton.active {
     background-color: #2e7d32;
     box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+/* React logo styling */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.react-logo {
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    animation: spin 20s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Create the RGB gradient border effect */
+.result-box::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    background-size: 400% 400%;
+    z-index: -1;
+    border-radius: 10px;
+    animation: rgbBorder 6s ease infinite;
+}
+
+@keyframes rgbBorder {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 } 
