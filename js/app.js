@@ -35,8 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const transcript = result[0].transcript;
                 
                 if (result.isFinal) {
-                    recognizedText += ' ' + transcript;
-                    statusIndicator.textContent = 'Recognized: ' + transcript;
+                    // Clean up repeated words that sometimes occur in Bengali recognition
+                    const cleanTranscript = cleanupRepeatedWords(transcript);
+                    recognizedText += ' ' + cleanTranscript;
+                    statusIndicator.textContent = 'Recognized: ' + cleanTranscript;
                 } else {
                     statusIndicator.textContent = 'Listening... ' + transcript;
                 }
@@ -136,15 +138,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to format text as a business order
     function formatAsBusinessOrder(text) {
+        // Clean and normalize the text
+        const cleanedText = text.trim();
+        
         // Check if the text appears to be a dimension-based order list
-        if (isDimensionOrder(text)) {
-            return formatDimensionOrder(text);
+        if (isDimensionOrder(cleanedText)) {
+            return formatDimensionOrder(cleanedText);
         }
         
-        // Regular order formatting (default)
-        const lines = text.split(/[।.!?]+/).filter(line => line.trim() !== '');
+        // Regular Bengali text formatting (default)
+        // Split by sentence endings (Bengali danda, periods, exclamation, question marks)
+        const lines = cleanedText.split(/[।.!?]+/).filter(line => line.trim() !== '');
         
-        let formattedText = '**Business Order**\n\n';
+        let formattedText = '**বাংলা অর্ডার**\n\n';
         
         lines.forEach((line, index) => {
             const trimmedLine = line.trim();
@@ -155,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add timestamp
         const now = new Date();
-        formattedText += `\nDate: ${now.toLocaleDateString()}\nTime: ${now.toLocaleTimeString()}`;
+        formattedText += `\nতারিখ: ${now.toLocaleDateString()}\nসময়: ${now.toLocaleTimeString()}`;
         
         return formattedText;
     }
@@ -312,8 +318,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to translate text using Google Translate (client-side approach)
     async function translateText(text, sourceLang, targetLang) {
         try {
+            // Remove markdown formatting for translation
+            const plainText = text
+                .replace(/\*\*বাংলা অর্ডার\*\*\n\n/, '')
+                .replace(/^\d+\.\s/gm, '')
+                .replace(/\n(তারিখ|সময়):.*$/gm, '');
+            
             // Use the free client-side translation approach
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(plainText)}`;
             
             const response = await fetch(url);
             
@@ -340,7 +352,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('No translation returned');
             }
             
-            return translatedText;
+            // Format the translated text similar to source
+            const translatedLines = translatedText.split(/[.!?]+/).filter(line => line.trim() !== '');
+            
+            let formattedTranslation = '**English Translation**\n\n';
+            
+            translatedLines.forEach((line, index) => {
+                const trimmedLine = line.trim();
+                if (trimmedLine) {
+                    formattedTranslation += `${index + 1}. ${trimmedLine}\n`;
+                }
+            });
+            
+            // Add timestamp
+            const now = new Date();
+            formattedTranslation += `\nDate: ${now.toLocaleDateString()}\nTime: ${now.toLocaleTimeString()}`;
+            
+            return formattedTranslation;
         } catch (error) {
             console.error('Translation error:', error);
             // Provide a more user-friendly error message
@@ -428,4 +456,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
     };
+    
+    // Function to clean up repeated words that often appear in Bengali recognition
+    function cleanupRepeatedWords(text) {
+        if (!text) return '';
+        
+        // Split text into words
+        const words = text.split(/\s+/);
+        const result = [];
+        
+        // Remove immediately repeated words (common in voice recognition)
+        for (let i = 0; i < words.length; i++) {
+            if (i === 0 || words[i] !== words[i-1]) {
+                result.push(words[i]);
+            }
+        }
+        
+        return result.join(' ');
+    }
 }); 
