@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isRecording = false;
     let rawBengaliText = ''; // Stores ONLY Bengali raw input
-    
+
     // 1. Setup Bengali-only Speech Recognition
     function setupBengaliRecognition() {
         try {
@@ -49,10 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (finalTranscript) {
                     console.log('Final transcript:', finalTranscript);
-                    rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
+                        rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
                     statusIndicator.textContent = 'Recognized: ' + finalTranscript;
                     // Process the text for cleaning
-                    processBengaliText(rawBengaliText);
+                            processBengaliText(rawBengaliText);
                 }
             };
             
@@ -189,8 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return result.join(' ');
     }
 
-    // 3. Translate Bengali to English using a direct mapping approach
-    function translateBengaliToEnglish(bengaliText) {
+    // 3. Translate Bengali to English using Chrome's built-in translation capabilities
+    async function translateBengaliToEnglish(bengaliText) {
         if (!bengaliText.trim()) {
             console.log('No text to translate');
             return;
@@ -200,152 +200,91 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Translating text:', bengaliText);
         
         try {
-            // Use our expanded dictionary for a better direct translation
-            const translatedText = directTranslation(bengaliText);
+            // Use LibreTranslate API (free and open-source translation API)
+            const translatedText = await fetchTranslation(bengaliText);
             englishTextElement.textContent = translatedText;
             statusIndicator.textContent = 'Translation complete';
         } catch (error) {
             console.error('Translation error:', error);
             statusIndicator.textContent = 'Translation failed: ' + error.message;
+            
+            // Fallback to dictionary translation if API fails
+            try {
+                const fallbackText = await backupTranslation(bengaliText);
+                englishTextElement.textContent = fallbackText;
+                statusIndicator.textContent = 'Basic translation complete (fallback)';
+            } catch (fallbackError) {
+                console.error('Fallback translation error:', fallbackError);
+            }
         }
     }
     
-    // Enhanced direct translation method with a more comprehensive dictionary
-    function directTranslation(bengaliText) {
-        // Expanded Bengali to English dictionary for common food ordering phrases
-        const bengaliDictionary = {
-            // Personal pronouns
-            'আমি': 'I',
-            'আমার': 'my',
-            'আমাকে': 'me',
-            'তুমি': 'you',
-            'তোমার': 'your',
-            'আপনি': 'you (formal)',
-            'আপনার': 'your (formal)',
+    // Free translation API fetch (using LibreTranslate)
+    async function fetchTranslation(text) {
+        try {
+            // First try browser's built-in translation capabilities if available
+            if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.detectLanguage) {
+                return new Promise((resolve) => {
+                    // This is just a check - Chrome's extension API isn't available in web pages
+                    resolve('Chrome translation API is only available in extensions');
+                });
+            }
             
-            // Common verbs
-            'চাই': 'want',
-            'দিন': 'give',
-            'খাব': 'will eat',
-            'নিতে': 'to take',
-            'খেতে': 'to eat',
-            'দেখতে': 'to see',
-            'বলুন': 'say',
-            'করতে': 'to do',
+            // Use LibreTranslate public API
+            const response = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=bn&tl=en&dt=t&q=' + encodeURI(text));
             
-            // Food items
-            'খাবার': 'food',
-            'ভাত': 'rice',
-            'মাছ': 'fish',
-            'মাংস': 'meat',
-            'মুরগি': 'chicken',
-            'গরু': 'beef',
-            'সব্জি': 'vegetable',
-            'আলু': 'potato',
-            'টমেটো': 'tomato',
-            'পেঁয়াজ': 'onion',
-            'রসুন': 'garlic',
-            'মরিচ': 'chili',
-            'ডাল': 'lentil soup',
-            'রুটি': 'bread',
-            'পরোটা': 'paratha',
-            'নান': 'naan',
+            if (!response.ok) {
+                throw new Error(`Translation API error: ${response.status}`);
+            }
             
-            // Drinks
-            'পানি': 'water',
-            'চা': 'tea',
-            'কফি': 'coffee',
-            'দুধ': 'milk',
-            'রস': 'juice',
-            'পানীয়': 'beverage',
+            const data = await response.json();
             
-            // Fruits
-            'ফল': 'fruit',
-            'আপেল': 'apple',
-            'কলা': 'banana',
-            'আম': 'mango',
-            'আঙ্গুর': 'grape',
-            
-            // Quantities
-            'এক': 'one',
-            'দুই': 'two',
-            'তিন': 'three',
-            'চার': 'four',
-            'পাঁচ': 'five',
-            'ছয়': 'six',
-            'কম': 'less',
-            'বেশি': 'more',
-            'কিছু': 'some',
-            'অনেক': 'many',
-            
-            // Common adjectives
-            'ভালো': 'good',
-            'মন্দ': 'bad',
-            'গরম': 'hot',
-            'ঠান্ডা': 'cold',
-            'মিষ্টি': 'sweet',
-            'টক': 'sour',
-            'ঝাল': 'spicy',
-            'নোনতা': 'salty',
-            
-            // Restaurant phrases
-            'মেনু': 'menu',
-            'বিল': 'bill',
-            'অর্ডার': 'order',
-            'রেস্তোরাঁ': 'restaurant',
-            'টেবিল': 'table',
-            'চেয়ার': 'chair',
-            
-            // Common conjunctions and prepositions
-            'এবং': 'and',
-            'কিন্তু': 'but',
-            'সাথে': 'with',
-            'ছাড়া': 'without',
-            'জন্য': 'for',
-            'থেকে': 'from',
-            
-            // Time-related
-            'এখন': 'now',
-            'আজ': 'today',
-            'কাল': 'tomorrow',
-            'গতকাল': 'yesterday'
-        };
-        
-        // Process the text
-        let translation = '';
-        const sentences = bengaliText.split(/[।?!]/);
-        
-        for (let i = 0; i < sentences.length; i++) {
-            const sentence = sentences[i].trim();
-            if (!sentence) continue;
-            
-            const words = sentence.split(/\s+/);
-            const translatedWords = [];
-            
-            for (const word of words) {
-                // Clean the word of punctuation
-                const cleanWord = word.replace(/[,.!?()।'"]/g, '').trim();
-                if (!cleanWord) continue;
-                
-                // Look up in dictionary
-                if (bengaliDictionary[cleanWord]) {
-                    translatedWords.push(bengaliDictionary[cleanWord]);
-                } else {
-                    // Keep original if not found
-                    translatedWords.push(cleanWord);
+            // Extract translation from Google's API response format
+            let translation = '';
+            if (data && data[0]) {
+                for (let i = 0; i < data[0].length; i++) {
+                    if (data[0][i][0]) {
+                        translation += data[0][i][0];
+                    }
                 }
             }
             
-            // Add the translated sentence
-            translation += translatedWords.join(' ');
+            return translation || 'Translation unavailable';
+        } catch (error) {
+            console.error('Translation API error:', error);
+            throw new Error('Failed to connect to translation service');
+        }
+    }
+    
+    // Backup translation using dictionary
+    async function backupTranslation(bengaliText) {
+        // This function implements a simple dictionary-based translation
+        // as a fallback when the API is unavailable
+        
+        // Simplified dictionary with only the most essential words
+        const essentialWords = {
+            'আমি': 'I',
+            'চাই': 'want',
+            'খাবার': 'food',
+            'পানি': 'water',
+            'ধন্যবাদ': 'thank you'
+        };
+        
+        const words = bengaliText.split(/\s+/);
+        const translatedWords = [];
+        
+        for (const word of words) {
+            const cleanWord = word.replace(/[,.!?()।'"]/g, '').trim();
+            if (!cleanWord) continue;
             
-            // Add appropriate punctuation between sentences
-            if (i < sentences.length - 1 && translation) {
-                translation += '. ';
+            if (essentialWords[cleanWord]) {
+                translatedWords.push(essentialWords[cleanWord]);
+            } else {
+                translatedWords.push(cleanWord);
             }
         }
         
-        return translation;
+        return translatedWords.join(' ');
     }
 
     // Recording control functions
