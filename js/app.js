@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Recognition started');
                 statusIndicator.textContent = 'Listening for Bengali...';
                 recordButton.classList.add('recording');
-                recordButton.textContent = '⏹️ Stop';
+                recordButton.innerHTML = '<i class="fas fa-stop"></i> Stop';
                 collectingMode = true; // Start in collecting mode
                 // Clear the text display when starting new recording
                 bengaliTextElement.textContent = '';
@@ -110,11 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Error restarting recognition:', error);
                         isRecording = false;
                         recordButton.classList.remove('recording');
-                        recordButton.textContent = '🎤 Record Bengali';
+                        recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
                     }
                 } else {
                     recordButton.classList.remove('recording');
-                    recordButton.textContent = '🎤 Record Bengali';
+                    recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
                 }
             };
             
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isRecording = true;
             statusIndicator.textContent = 'Listening for Bengali...';
             recordButton.classList.add('recording');
-            recordButton.textContent = '⏹️ Stop';
+            recordButton.innerHTML = '<i class="fas fa-stop"></i>';
             console.log('Recording started');
         } catch (error) {
             console.error('Error starting recording:', error);
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 collectingMode = false; // Exit collection mode to process full text
                 statusIndicator.textContent = 'Processing complete audio...';
                 recordButton.classList.remove('recording');
-                recordButton.textContent = '🎤 Record Bengali';
+                recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
                 console.log('Recording stopped, processing full text');
                 
                 // Process the entire collected text after stopping
@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Set initial button text
-        recordButton.textContent = '🎤 Record Bengali';
+        recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
         
         // Ensure text elements are empty on startup
         bengaliTextElement.textContent = '';
