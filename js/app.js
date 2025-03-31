@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isRecording = false;
     let rawBengaliText = ''; // Stores ONLY Bengali raw input
+    let collectingMode = true; // When true, only collect audio without processing
 
     // 1. Setup Bengali-only Speech Recognition
     function setupBengaliRecognition() {
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusIndicator.textContent = 'Listening for Bengali...';
                 recordButton.classList.add('recording');
                 recordButton.textContent = '⏹️ Stop';
+                collectingMode = true; // Start in collecting mode
             };
             
             recognition.onresult = (event) => {
@@ -50,13 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // If we have a final transcript, add it to our raw text and process
+                // If we have a final transcript, add it to our raw text
                 if (finalTranscript) {
                     console.log('Final transcript:', finalTranscript);
                     rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
                     statusIndicator.textContent = 'Recognized: ' + finalTranscript;
-                    // Process the text for cleaning
-                    processBengaliText(rawBengaliText);
+                    
+                    // Only process text after stopping if we're not in collecting mode
+                    if (!collectingMode) {
+                        processBengaliText(rawBengaliText);
+                    }
                 }
                 
                 // For interim results, don't update the UI directly
@@ -305,7 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bengaliTextElement.textContent = '';
             englishTextElement.textContent = '';
             
-            // Start recording
+            // Start recording in collection mode
+            collectingMode = true;
             recognition.start();
             isRecording = true;
             statusIndicator.textContent = 'Listening for Bengali...';
@@ -325,10 +331,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (recognition && isRecording) {
                 recognition.stop();
                 isRecording = false;
-                statusIndicator.textContent = 'Processing complete';
+                collectingMode = false; // Exit collection mode to process full text
+                statusIndicator.textContent = 'Processing complete audio...';
                 recordButton.classList.remove('recording');
                 recordButton.textContent = '🎤 Record Bengali';
-                console.log('Recording stopped');
+                console.log('Recording stopped, processing full text');
+                
+                // Process the entire collected text after stopping
+                if (rawBengaliText.trim()) {
+                    processBengaliText(rawBengaliText);
+                } else {
+                    statusIndicator.textContent = 'No audio detected';
+                }
             }
         } catch (error) {
             console.error('Error stopping recording:', error);
