@@ -1,0 +1,62 @@
+{
+    "name": "Bengali Voice Order",
+    "short_name": "Voice Order",
+    "description": "Convert Bengali speech to formatted business orders",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#f8f9fa",
+    "theme_color": "#4285f4",
+    "orientation": "portrait",
+    "dir": "ltr",
+    "lang": "en-US",
+    "scope": "/",
+    "categories": ["business", "productivity", "utilities"],
+    "icons": [
+        {
+            "src": "public/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "public/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "public/maskable-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "public/screenshot-mobile.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Bengali Voice Order on mobile"
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Start Recording",
+            "short_name": "Record",
+            "description": "Start recording Bengali speech",
+            "url": "/index.html?action=record",
+            "icons": [
+                {
+                    "src": "public/record-icon.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "edge_side_panel": {
+        "preferred_width": 400
+    }
+} 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bengali Voice Order Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4285f4">
+    <link rel="apple-touch-icon" href="public/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bengali Voice Order</h1>
+        </header>
+        
+        <main>
+            <div class="voice-controls">
+                <button id="recordButton" class="btn primary">
+                    <span class="icon">🎤</span> Record
+                </button>
+            </div>
+            
+            <div id="statusIndicator">Ready</div>
+            
+            <div class="bengali-results">
+                <h2>Bengali Order</h2>
+                <div class="result-box" id="bengaliText"></div>
+                <button id="copyBengali" class="btn copy">
+                    <span class="icon">📋</span> Copy Bengali
+                </button>
+            </div>
+            
+            <div class="options">
+                <label class="switch">
+                    <input type="checkbox" id="translateToggle" checked>
+                    <span class="slider round"></span>
+                    <span class="toggle-label">Translate</span>
+                </label>
+            </div>
+            
+            <div class="english-results">
+                <h2>English Translation</h2>
+                <div class="result-box" id="englishText"></div>
+                <button id="copyEnglish" class="btn copy">
+                    <span class="icon">📋</span> Copy English
+                </button>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Powered by Clude AI</p>
+            <button id="installApp" class="btn install">
+                <span class="icon">📲</span> Install App
+            </button>
+        </footer>
+    </div>
+    
+    <script src="js/app.js"></script>
+    <script src="js/pwa.js"></script>
+    <script src="js/test-util.js"></script>
+</body>
+</html> 

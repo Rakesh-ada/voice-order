@@ -1,0 +1,1 @@
+Bengali Voice Order Assistant - A free PWA that converts Bengali speech to text, formats business orders, and provides translation with zero API keys required 
