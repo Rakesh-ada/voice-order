@@ -536,85 +536,163 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicator.textContent = 'Formatting order...';
         
         try {
-            // Extract product size and quantity information using regex patterns
-            const sizeQuantityPattern = /(\d+)\s*[xX]\s*(\d+)[:\s]+(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
-            const sizePattern = /[Ss](?:ize)?\s*(\d+)\s*:\s*/;
-            const simpleQuantityPattern = /(\d+)\s*[xX]\s*(\d+).*?(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+            // Use Gemini API for smarter formatting
+            formatWithGemini(translatedText)
+                .then(formattedOrder => {
+                    englishTextElement.textContent = formattedOrder;
+                    statusIndicator.textContent = 'Order formatted successfully';
+                })
+                .catch(error => {
+                    console.error('AI formatting error:', error);
+                    
+                    // Fall back to regex-based formatting if AI fails
+                    const fallbackFormatted = regexBasedFormatting(translatedText);
+                    
+                    if (fallbackFormatted) {
+                        englishTextElement.textContent = fallbackFormatted;
+                        statusIndicator.textContent = 'Order formatted with basic format';
+                    } else {
+                        statusIndicator.textContent = 'Could not format text. No order quantities found.';
+                    }
+                });
+        } catch (error) {
+            console.error('Error formatting order:', error);
+            statusIndicator.textContent = 'Error formatting order: ' + error.message;
+        }
+    }
+    
+    // Format order text using Gemini AI
+    async function formatWithGemini(text) {
+        try {
+            const apiKey = getNextApiKey();
+            console.log('Using API key for order formatting:', apiKey.substring(0, 5) + '...');
             
-            // Find all matches for quantity patterns
-            let matches = [];
-            let match;
+            const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `Format this product order text into a structured list with sizes and quantities. Extract size numbers (like S1, S2), dimensions (like 8x10, 11x14) and quantities (like 10 kg, 5 pieces). Format as: "S1:\n\n- 8x10: 10 kg\n- 16x20: 5 kg\n".\nIf there are no size numbers, just list items with bullet points. If no dimensions, use standard photo sizes (8x10, 11x14, etc.).\nOnly output the formatted order text without explanations or additional text.\nInput: "${text}"`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 800
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Gemini API Error Response:', errorData);
+                throw new Error(`Gemini API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                throw new Error('Invalid response format from Gemini API');
+            }
+
+            // Extract just the formatted order, removing any explanatory text
+            let formattedOrder = data.candidates[0].content.parts[0].text;
             
-            // Try the primary pattern first
-            while ((match = sizeQuantityPattern.exec(translatedText)) !== null) {
+            // Clean up the response
+            formattedOrder = formattedOrder
+                .replace(/^["']|["']$/g, '')                    // Remove quotes at start/end
+                .replace(/^Formatted order:\s*/i, '')           // Remove "Formatted order:" prefix
+                .replace(/^Here is the formatted order:\s*/i, '') // Remove "Here is the formatted order:" prefix
+                .replace(/^Order:\s*/i, '')                     // Remove "Order:" prefix
+                .replace(/^Output:\s*/i, '')                    // Remove "Output:" prefix
+                .replace(/^\s*\n+/g, '')                        // Remove empty lines at beginning
+                .replace(/^[\s\-–—•*]+/, '');                   // Remove leading spaces, dashes, bullets
+
+            return formattedOrder.trim();
+        } catch (error) {
+            console.error('Gemini API call for order formatting failed:', error);
+            throw error;
+        }
+    }
+
+    // Fallback regex-based formatting
+    function regexBasedFormatting(text) {
+        // Extract product size and quantity information using regex patterns
+        const sizeQuantityPattern = /(\d+)\s*[xX]\s*(\d+)[:\s]+(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+        const sizePattern = /[Ss](?:ize)?\s*(\d+)\s*:\s*/;
+        const simpleQuantityPattern = /(\d+)\s*[xX]\s*(\d+).*?(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+        
+        // Find all matches for quantity patterns
+        let matches = [];
+        let match;
+        
+        // Try the primary pattern first
+        while ((match = sizeQuantityPattern.exec(text)) !== null) {
+            matches.push({
+                width: match[1],
+                height: match[2],
+                quantity: match[3]
+            });
+        }
+        
+        // If no matches found, try the simpler pattern
+        if (matches.length === 0) {
+            while ((match = simpleQuantityPattern.exec(text)) !== null) {
                 matches.push({
                     width: match[1],
                     height: match[2],
                     quantity: match[3]
                 });
             }
+        }
+        
+        // Extract size number if present
+        let sizeNumber = "";
+        const sizeMatch = text.match(sizePattern);
+        if (sizeMatch) {
+            sizeNumber = "S" + sizeMatch[1] + ":";
+        }
+        
+        // Format the structured order
+        let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
+        
+        if (matches.length > 0) {
+            // Add structured items
+            matches.forEach(item => {
+                formattedOrder += `- ${item.width}x${item.height}: ${item.quantity} kg\n`;
+            });
             
-            // If no matches found, try the simpler pattern
-            if (matches.length === 0) {
-                while ((match = simpleQuantityPattern.exec(translatedText)) !== null) {
-                    matches.push({
-                        width: match[1],
-                        height: match[2],
-                        quantity: match[3]
-                    });
+            return formattedOrder;
+        } else {
+            // If no matches found, try to extract from general patterns
+            const generalPattern = /(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+            const sizes = ["8x10", "9x12", "10x12", "11x14", "12x15", "13x16", "16x20", "20x24", "20x30"];
+            
+            let generalMatches = [];
+            let generalMatch;
+            
+            while ((generalMatch = generalPattern.exec(text)) !== null) {
+                if (generalMatches.length < sizes.length) {
+                    generalMatches.push(generalMatch[1]);
                 }
             }
             
-            // Extract size number if present
-            let sizeNumber = "";
-            const sizeMatch = translatedText.match(sizePattern);
-            if (sizeMatch) {
-                sizeNumber = "S" + sizeMatch[1] + ":";
-            }
-            
-            // Format the structured order
-            let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
-            
-            if (matches.length > 0) {
-                // Add structured items
-                matches.forEach(item => {
-                    formattedOrder += `- ${item.width}x${item.height}: ${item.quantity} kg\n`;
-                });
+            if (generalMatches.length > 0) {
+                // Create a reasonable structure with the sizes we know
+                let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
                 
-                // Update the English text with the formatted order
-                englishTextElement.textContent = formattedOrder;
-                statusIndicator.textContent = 'Order formatted successfully';
+                for (let i = 0; i < Math.min(generalMatches.length, sizes.length); i++) {
+                    formattedOrder += `- ${sizes[i]}: ${generalMatches[i]} kg\n`;
+                }
+                
+                return formattedOrder;
             } else {
-                // If no matches found, try to extract from general patterns
-                const generalPattern = /(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
-                const sizes = ["8x10", "9x12", "10x12", "11x14", "12x15", "13x16", "16x20", "20x24", "20x30"];
-                
-                let generalMatches = [];
-                let generalMatch;
-                
-                while ((generalMatch = generalPattern.exec(translatedText)) !== null) {
-                    if (generalMatches.length < sizes.length) {
-                        generalMatches.push(generalMatch[1]);
-                    }
-                }
-                
-                if (generalMatches.length > 0) {
-                    // Create a reasonable structure with the sizes we know
-                    let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
-                    
-                    for (let i = 0; i < Math.min(generalMatches.length, sizes.length); i++) {
-                        formattedOrder += `- ${sizes[i]}: ${generalMatches[i]} kg\n`;
-                    }
-                    
-                    englishTextElement.textContent = formattedOrder;
-                    statusIndicator.textContent = 'Order formatted with best guess';
-                } else {
-                    statusIndicator.textContent = 'Could not format text. No order quantities found.';
-                }
+                return null;
             }
-        } catch (error) {
-            console.error('Error formatting order:', error);
-            statusIndicator.textContent = 'Error formatting order: ' + error.message;
         }
     }
     
