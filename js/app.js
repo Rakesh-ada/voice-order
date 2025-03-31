@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Only process text after stopping if we're not in collecting mode
                     if (!collectingMode) {
-                        processBengaliText(rawBengaliText);
+                            processBengaliText(rawBengaliText);
                     }
                 }
                 
