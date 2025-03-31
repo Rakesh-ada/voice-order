@@ -119,17 +119,32 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Processing text:', text);
         
         try {
-            // Enhanced client-side cleaning of repetitions
-            const cleanedText = removeRepetitions(text);
+            // First do basic client-side cleaning
+            const basicCleanedText = removeBasicRepetitions(text);
             
-            // Display ONLY the cleaned text, never the raw text
-            bengaliTextElement.textContent = cleanedText;
-            statusIndicator.textContent = 'Processed';
-            
-            // Auto-translate if enabled
-            if (translateToggle.checked) {
-                translateBengaliToEnglish(cleanedText);
-            }
+            // Then use Gemini to further clean repetitions
+            cleanTextWithGemini(basicCleanedText)
+                .then(finalCleanedText => {
+                    // Display the cleaned text
+                    bengaliTextElement.textContent = finalCleanedText;
+                    statusIndicator.textContent = 'Processed';
+                    
+                    // Auto-translate if enabled
+                    if (translateToggle.checked) {
+                        translateBengaliToEnglish(finalCleanedText);
+                    }
+                })
+                .catch(error => {
+                    console.error('Gemini text cleaning error:', error);
+                    // Fallback to basic cleaned text if Gemini fails
+                    bengaliTextElement.textContent = basicCleanedText;
+                    statusIndicator.textContent = 'Processed (basic cleanup only)';
+                    
+                    // Auto-translate if enabled
+                    if (translateToggle.checked) {
+                        translateBengaliToEnglish(basicCleanedText);
+                    }
+                });
         } catch (error) {
             console.error('Processing error:', error);
             statusIndicator.textContent = 'Error processing text: ' + error.message;
@@ -138,8 +153,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Enhanced repetition removal function
-    function removeRepetitions(text) {
+    // Call Gemini API for text cleaning
+    async function cleanTextWithGemini(text) {
+        try {
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `Clean up this Bengali text by removing repeated words and phrases, keeping the meaning intact. Do not translate to English, only return the cleaned Bengali text: "${text}"`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 800
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Gemini API Error Response:', errorData);
+                throw new Error(`Gemini API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                throw new Error('Invalid response format from Gemini API');
+            }
+
+            // Extract the cleaned text
+            let cleanedText = data.candidates[0].content.parts[0].text;
+            
+            // Clean up the result - remove quotation marks and explanatory text
+            cleanedText = cleanedText.replace(/^["']|["']$/g, '');
+            cleanedText = cleanedText.replace(/^Cleaned text: /i, '');
+            cleanedText = cleanedText.replace(/^Output: /i, '');
+            
+            return cleanedText.trim();
+        } catch (error) {
+            console.error('Gemini API call for text cleaning failed:', error);
+            throw error;
+        }
+    }
+
+    // Simple repetition removal for basic cleanup before using Gemini
+    function removeBasicRepetitions(text) {
         // First, let's clean up extra spaces and normalize punctuation
         const normalizedText = text.replace(/\s+/g, ' ').trim();
         
@@ -171,16 +236,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Now check for repeated words within each sentence
+        // Remove basic consecutive repeats within sentences
         const finalSentences = [];
         for (const sentence of uniqueSentences) {
-            finalSentences.push(removeRepeatedWords(sentence));
+            finalSentences.push(removeConsecutiveRepeats(sentence));
         }
         
         // Join unique sentences back together
         return finalSentences.join('। ') + (finalSentences.length > 0 ? '।' : '');
     }
     
+    // Only remove consecutive repeated words (basic cleanup)
+    function removeConsecutiveRepeats(sentence) {
+        const words = sentence.split(/\s+/);
+        const result = [];
+        
+        for (let i = 0; i < words.length; i++) {
+            // Only add the word if it's different from the previous one
+            if (i === 0 || words[i].toLowerCase() !== words[i-1].toLowerCase()) {
+                result.push(words[i]);
+            }
+        }
+        
+        return result.join(' ');
+    }
+
     // Calculate similarity between two strings (simple Levenshtein-based approach)
     function calculateSimilarity(str1, str2) {
         if (str1 === str2) return 1.0;
@@ -198,52 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         return matches / Math.max(words1.length, words2.length);
-    }
-    
-    // Improved function to remove repeated words in a sentence
-    function removeRepeatedWords(sentence) {
-        const words = sentence.split(/\s+/);
-        const result = [];
-        
-        // Pattern detection for word repetition
-        const maxRepeats = 2; // Allow max 2 repetitions of the same word
-        const minDistance = 3; // Look for repetitions within this word distance
-        
-        // Count occurrences for repetition pattern detection
-        const recentWords = [];
-        const wordCounts = new Map();
-        
-        for (let i = 0; i < words.length; i++) {
-            const currentWord = words[i].toLowerCase();
-            
-            // Check for immediate repetition (consecutive identical words)
-            if (i > 0 && currentWord === words[i-1].toLowerCase()) {
-                continue; // Skip consecutive repeat
-            }
-            
-            // Track recent words for pattern detection
-            if (recentWords.length >= minDistance) {
-                recentWords.shift(); // Remove oldest word
-            }
-            
-            // Check if this word appears multiple times in recent words
-            const recentCount = recentWords.filter(w => w === currentWord).length;
-            
-            // Check total count of this word so far
-            let totalCount = wordCounts.get(currentWord) || 0;
-            
-            // If we've seen this word recently AND it's already appeared multiple times overall
-            if (recentCount > 0 && totalCount >= maxRepeats) {
-                continue; // Skip this repetition
-            }
-            
-            // Add the word (original case preserved)
-            result.push(words[i]);
-            recentWords.push(currentWord);
-            wordCounts.set(currentWord, totalCount + 1);
-        }
-        
-        return result.join(' ');
     }
 
     // 3. Translate Bengali to English using Gemini API
