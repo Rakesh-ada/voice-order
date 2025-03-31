@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Clean up this Bengali text by removing repeated words and phrases, keeping the meaning intact. Do not translate to English, only return the cleaned Bengali text: "${text}"`
+                            text: `Clean this Bengali text by removing repeated words and phrases. Maintain original meaning. Return only cleaned Bengali text without explanations or additional text: "${text}"`
                         }]
                     }],
                     generationConfig: {
@@ -230,10 +230,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Extract the cleaned text
             let cleanedText = data.candidates[0].content.parts[0].text;
             
-            // Clean up the result - remove quotation marks and explanatory text
-            cleanedText = cleanedText.replace(/^["']|["']$/g, '');
-            cleanedText = cleanedText.replace(/^Cleaned text: /i, '');
-            cleanedText = cleanedText.replace(/^Output: /i, '');
+            // Enhanced cleanup of results
+            cleanedText = cleanedText
+                .replace(/^["']|["']$/g, '')                    // Remove quotes at start/end
+                .replace(/^Cleaned text: /i, '')                // Remove "Cleaned text:" prefix
+                .replace(/^Output: /i, '')                      // Remove "Output:" prefix
+                .replace(/^Result: /i, '')                      // Remove "Result:" prefix
+                .replace(/^Here is the cleaned text: /i, '')    // Remove "Here is the cleaned text:" prefix
+                .replace(/^The cleaned text is: /i, '')         // Remove "The cleaned text is:" prefix
+                .replace(/^Cleaned Bengali text: /i, '')        // Remove "Cleaned Bengali text:" prefix
+                .replace(/^\s*\n+/g, '')                        // Remove empty lines at the beginning
+                .replace(/^[\s\-–—•*]+/, '');                   // Remove leading spaces, dashes, bullets
             
             return cleanedText.trim();
         } catch (error) {
@@ -373,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Translate this Bengali text to English: "${text}"`
+                            text: `Translate Bengali to English. Only provide the translation without any explanations, additional text, introductions, or footnotes: "${text}"`
                         }]
                     }],
                     generationConfig: {
@@ -401,12 +408,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Extract just the translation, ignoring any explanatory text
             let translatedText = data.candidates[0].content.parts[0].text;
             
-            // Clean up the result - remove quotation marks and explanatory text
-            translatedText = translatedText.replace(/^["']|["']$/g, '');
-            translatedText = translatedText.replace(/^Translation: /i, '');
-            translatedText = translatedText.replace(/^In English: /i, '');
-            translatedText = translatedText.replace(/^Translated text: /i, '');
-            
+            // Enhanced cleanup of translation results
+            translatedText = translatedText
+                .replace(/^["']|["']$/g, '')                    // Remove quotes at start/end
+                .replace(/^Translation: /i, '')                 // Remove "Translation:" prefix
+                .replace(/^In English: /i, '')                  // Remove "In English:" prefix
+                .replace(/^Translated text: /i, '')             // Remove "Translated text:" prefix
+                .replace(/^Here is the translation: /i, '')     // Remove "Here is the translation:" prefix
+                .replace(/^The translation is: /i, '')          // Remove "The translation is:" prefix
+                .replace(/^Translating: /i, '')                 // Remove "Translating:" prefix
+                .replace(/^Bengali to English: /i, '')          // Remove "Bengali to English:" prefix
+                .replace(/^English translation: /i, '')         // Remove "English translation:" prefix
+                .replace(/^\s*\n+/g, '')                        // Remove empty lines at the beginning
+                .replace(/^[\s\-–—•*]+/, '');                   // Remove leading spaces, dashes, bullets
+
             return translatedText.trim();
         } catch (error) {
             console.error('Gemini API call failed:', error);
