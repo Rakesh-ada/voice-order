@@ -200,16 +200,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return matches / Math.max(words1.length, words2.length);
     }
     
-    // Remove repeated consecutive words in a sentence
+    // Improved function to remove repeated words in a sentence
     function removeRepeatedWords(sentence) {
         const words = sentence.split(/\s+/);
         const result = [];
         
+        // Pattern detection for word repetition
+        const maxRepeats = 2; // Allow max 2 repetitions of the same word
+        const minDistance = 3; // Look for repetitions within this word distance
+        
+        // Count occurrences for repetition pattern detection
+        const recentWords = [];
+        const wordCounts = new Map();
+        
         for (let i = 0; i < words.length; i++) {
-            // Only add the word if it's different from the previous one
-            if (i === 0 || words[i].toLowerCase() !== words[i-1].toLowerCase()) {
-                result.push(words[i]);
+            const currentWord = words[i].toLowerCase();
+            
+            // Check for immediate repetition (consecutive identical words)
+            if (i > 0 && currentWord === words[i-1].toLowerCase()) {
+                continue; // Skip consecutive repeat
             }
+            
+            // Track recent words for pattern detection
+            if (recentWords.length >= minDistance) {
+                recentWords.shift(); // Remove oldest word
+            }
+            
+            // Check if this word appears multiple times in recent words
+            const recentCount = recentWords.filter(w => w === currentWord).length;
+            
+            // Check total count of this word so far
+            let totalCount = wordCounts.get(currentWord) || 0;
+            
+            // If we've seen this word recently AND it's already appeared multiple times overall
+            if (recentCount > 0 && totalCount >= maxRepeats) {
+                continue; // Skip this repetition
+            }
+            
+            // Add the word (original case preserved)
+            result.push(words[i]);
+            recentWords.push(currentWord);
+            wordCounts.set(currentWord, totalCount + 1);
         }
         
         return result.join(' ');
