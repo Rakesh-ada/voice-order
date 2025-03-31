@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Gemini API key
     const GEMINI_API_KEY = 'AIzaSyDjonLXdO1u8KdXllXSiAsZB0VFXG2iRbU';
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     
     // Cache for translations to optimize API usage
     const translationCache = new Map();
@@ -274,13 +274,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Translate this Bengali text to English accurately, maintaining the original meaning and context: "${text}"`
+                            text: `Translate this Bengali text to English: "${text}"`
                         }]
                     }],
                     generationConfig: {
                         temperature: 0.1,
-                        topP: 0.8,
-                        topK: 40
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 800
                     }
                 })
             });
@@ -304,6 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clean up the result - remove quotation marks and explanatory text
             translatedText = translatedText.replace(/^["']|["']$/g, '');
             translatedText = translatedText.replace(/^Translation: /i, '');
+            translatedText = translatedText.replace(/^In English: /i, '');
+            translatedText = translatedText.replace(/^Translated text: /i, '');
             
             return translatedText.trim();
         } catch (error) {
