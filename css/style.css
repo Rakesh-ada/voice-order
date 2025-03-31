@@ -1,17 +1,17 @@
 :root {
-    --primary-color: #64b5f6;  /* Lighter blue for better visibility on dark */
+    --primary-color: #1976d2;  /* Stronger blue */
     --secondary-color: #ff5252; /* Brighter red for dark theme */
     --accent-color: #4caf50;   /* Slightly brighter green */
     --warning-color: #ffca28;  /* Brighter yellow */
-    --text-color: #e0e0e0;     /* Light gray text for dark theme */
-    --light-bg: #121212;       /* Dark background */
-    --card-bg: #1e1e1e;        /* Dark card background */
-    --header-color: #bbdefb;   /* Light blue for headers */
+    --text-color: #ffffff;     /* White text for better contrast */
+    --light-bg: #0d47a1;       /* Deep blue background */
+    --card-bg: #1565c0;        /* Lighter blue card background */
+    --header-color: #ffffff;   /* White for headers */
     --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     --border-radius: 12px;
-    --border-color: #333333;   /* Dark border color */
-    --status-color: #b2ebf2;   /* Light cyan for status text */
+    --border-color: #2979ff;   /* Bright blue border color */
+    --status-color: #e3f2fd;   /* Light blue for status text */
 }
 
 * {
@@ -25,6 +25,7 @@ body {
     line-height: 1.6;
     color: var(--text-color);
     background-color: var(--light-bg);
+    background-image: linear-gradient(to bottom right, #1565c0, #0d47a1);
     -webkit-tap-highlight-color: transparent;
     padding: 0;
     margin: 0;
@@ -105,6 +106,9 @@ main {
 .primary {
     background-color: #4CAF50;
     color: white;
+    font-weight: bold;
+    border-radius: 25px;
+    padding: 12px 20px;
 }
 
 .primary:hover {
@@ -114,6 +118,9 @@ main {
 .secondary {
     background-color: #2196F3;
     color: white;
+    font-weight: bold;
+    border-radius: 25px;
+    padding: 12px 20px;
 }
 
 .secondary:hover {
@@ -172,10 +179,11 @@ main {
     padding: 10px;
     margin-top: 10px;
     font-weight: bold;
-    color: var(--status-color);
+    color: white;
     font-size: 0.9rem;
-    background-color: rgba(30, 30, 30, 0.8);
+    background-color: rgba(13, 71, 161, 0.7);
     border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
 }
 
 .results-container {
@@ -436,23 +444,12 @@ footer {
 
 /* Make footer text more visible */
 footer p {
-    color: var(--text-color);
-    text-align: center;
-    margin-bottom: 10px;
+    display: none; /* Hide the "Powered by Gemini AI" text in footer */
 }
 
 /* API Badge */
 .api-badge {
-    display: inline-block;
-    background-color: #4285f4;
-    color: white;
-    font-size: 0.75rem;
-    padding: 3px 8px;
-    border-radius: 12px;
-    margin-left: 10px;
-    vertical-align: middle;
-    font-weight: 500;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    display: none; /* Hide the Gemini badge */
 }
 
 /* Format Order Button */
