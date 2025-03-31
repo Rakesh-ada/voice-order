@@ -85,47 +85,54 @@ main {
 }
 
 .btn {
-    padding: 12px 20px;
+    padding: 10px 15px;
+    border-radius: 5px;
     border: none;
-    border-radius: 50px;
+    font-size: 1rem;
     cursor: pointer;
-    font-weight: bold;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     transition: all 0.3s ease;
-    flex: 1;
-    font-size: 0.9rem;
-    min-height: 48px; /* Larger touch target */
-    touch-action: manipulation;
 }
 
-.btn.primary {
-    background-color: var(--primary-color);
-    color: #000000; /* Black text for better contrast */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.btn.secondary {
-    background-color: #383838; /* Darker gray */
-    color: var(--text-color);
-}
-
-.btn.secondary.recording {
-    background-color: var(--secondary-color);
+.primary {
+    background-color: #4CAF50;
     color: white;
+}
+
+.primary:hover {
+    background-color: #45a049;
+}
+
+.secondary {
+    background-color: #2196F3;
+    color: white;
+}
+
+.secondary:hover {
+    background-color: #0b7dda;
+}
+
+.recording {
     animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
     0% {
-        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4);
     }
-    50% {
-        opacity: 0.7;
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
     }
     100% {
-        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
     }
 }
 
@@ -406,4 +413,29 @@ footer p {
     color: var(--text-color);
     text-align: center;
     margin-bottom: 10px;
+}
+
+/* API Badge */
+.api-badge {
+    display: inline-block;
+    background-color: #4285f4;
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    vertical-align: middle;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Format Order Button */
+#formatOrderButton {
+    background-color: var(--warning-color);
+    color: #000;
+    margin-left: 10px;
+}
+
+#formatOrderButton:hover {
+    background-color: #ffc107;
 } 

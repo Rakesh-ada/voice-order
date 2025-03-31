@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bengali Voice Order Assistant</title>
     <!-- Security meta tags -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:; media-src 'self' https:">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://translate.googleapis.com https://generativelanguage.googleapis.com https:; media-src 'self' https:">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
@@ -30,6 +30,9 @@
                 <button id="recordButton" class="btn primary">
                     <span class="icon">🎤</span> Record
                 </button>
+                <button id="formatOrderButton" class="btn secondary">
+                    <span class="icon">📝</span> Format Order
+                </button>
             </div>
             
             <div id="statusIndicator">Ready</div>
@@ -48,6 +51,7 @@
                     <span class="slider round"></span>
                     <span class="toggle-label">Translate</span>
                 </label>
+                <div class="api-badge">Powered by Gemini AI</div>
             </div>
             
             <div class="english-results">
@@ -60,7 +64,7 @@
         </main>
         
         <footer>
-            <p>Powered by Clude AI</p>
+            <p>Powered by Gemini AI</p>
             <button id="installApp" class="btn install">
                 <span class="icon">📲</span> Install App
             </button>

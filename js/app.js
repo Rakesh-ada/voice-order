@@ -7,12 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBengaliButton = document.getElementById('copyBengali');
     const copyEnglishButton = document.getElementById('copyEnglish');
     const translateToggle = document.getElementById('translateToggle');
+    const formatOrderButton = document.getElementById('formatOrderButton');
     
     // Variables
     let recognition;
     let isRecording = false;
     let recognizedText = '';
     let detectedLanguage = '';
+    
+    // Gemini API key
+    const GEMINI_API_KEY = 'AIzaSyBL_Opc-A1Y1qH8XB8pZ9JDlzx_Ql5rFoM';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
     
     // Setup Web Speech API
     function setupSpeechRecognition() {
@@ -197,44 +202,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Function to translate text using Google Translate (client-side approach)
+    // Function to translate text using Gemini API
     async function translateText(text, sourceLang, targetLang) {
         try {
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+            // Create the prompt for Gemini to translate the text
+            let prompt;
+            if (sourceLang === 'bn' && targetLang === 'en') {
+                prompt = `Translate the following Bengali text to English. Return only the translation without any additional text or explanations: "${text}"`;
+            } else if (sourceLang === 'en' && targetLang === 'bn') {
+                prompt = `Translate the following English text to Bengali. Return only the translation without any additional text or explanations: "${text}"`;
+            } else {
+                throw new Error(`Unsupported language pair: ${sourceLang} to ${targetLang}`);
+            }
             
-            const response = await fetch(url);
+            // Prepare the request body for Gemini API
+            const requestBody = {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: prompt
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            // Send the request to Gemini API
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
             
             if (!response.ok) {
-                throw new Error(`Translation request failed with status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Gemini API request failed with status: ${response.status}, details: ${JSON.stringify(errorData)}`);
             }
             
             const data = await response.json();
             
-            // The response format is a nested array - extract the translated text
-            let translatedText = '';
-            
-            // Each item in the first array contains a translation segment
-            if (data && data[0]) {
-                // Concatenate all translation segments
-                for (const segment of data[0]) {
-                    if (segment[0]) {
-                        translatedText += segment[0];
-                    }
-                }
+            // Extract the translated text from the Gemini API response
+            if (data.candidates && data.candidates.length > 0 && 
+                data.candidates[0].content && 
+                data.candidates[0].content.parts && 
+                data.candidates[0].content.parts.length > 0) {
+                
+                const translatedText = data.candidates[0].content.parts[0].text.trim();
+                return translatedText;
             }
             
-            if (!translatedText) {
-                throw new Error('No translation returned');
-            }
-            
-            return translatedText;
+            throw new Error('No translation returned from Gemini API');
         } catch (error) {
             console.error('Translation error:', error);
-            // Provide a more user-friendly error message
-            if (error.message.includes('failed with status: 429')) {
-                throw new Error('Translation limit exceeded. Please try again later.');
-            } else {
-                throw new Error('Failed to translate text: ' + error.message);
+            
+            // Fallback to client-side Google Translate if Gemini API fails
+            try {
+                console.log('Falling back to Google Translate API');
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+                
+                const fallbackResponse = await fetch(url);
+                
+                if (!fallbackResponse.ok) {
+                    throw new Error(`Fallback translation request failed with status: ${fallbackResponse.status}`);
+                }
+                
+                const fallbackData = await fallbackResponse.json();
+                
+                // The response format is a nested array - extract the translated text
+                let translatedText = '';
+                
+                // Each item in the first array contains a translation segment
+                if (fallbackData && fallbackData[0]) {
+                    // Concatenate all translation segments
+                    for (const segment of fallbackData[0]) {
+                        if (segment[0]) {
+                            translatedText += segment[0];
+                        }
+                    }
+                }
+                
+                if (!translatedText) {
+                    throw new Error('No translation returned from fallback service');
+                }
+                
+                return translatedText;
+            } catch (fallbackError) {
+                console.error('Fallback translation error:', fallbackError);
+                throw new Error(`Translation failed: ${error.message}. Fallback also failed: ${fallbackError.message}`);
             }
         }
     }
@@ -270,6 +327,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     copyEnglishButton.innerHTML = '<span class="icon">📋</span> Copy English';
                 }, 2000);
+            });
+    });
+    
+    // Format Order button event listener
+    formatOrderButton.addEventListener('click', () => {
+        // Get the appropriate text based on detected language
+        const textToFormat = detectedLanguage === 'bn' ? 
+            bengaliTextElement.textContent : 
+            englishTextElement.textContent;
+            
+        if (!textToFormat.trim()) {
+            statusIndicator.textContent = 'No text to format. Please record or enter text first.';
+            return;
+        }
+        
+        formatBusinessOrder(textToFormat, detectedLanguage)
+            .then(formattedText => {
+                // Update the appropriate text element
+                if (detectedLanguage === 'bn') {
+                    bengaliTextElement.textContent = formattedText;
+                    
+                    // If translation is enabled, translate the formatted text
+                    if (translateToggle.checked) {
+                        translateText(formattedText, 'bn', 'en')
+                            .then(englishText => {
+                                englishTextElement.textContent = englishText;
+                                statusIndicator.textContent = 'Order formatted';
+                            })
+                            .catch(error => {
+                                console.error('Translation error:', error);
+                                statusIndicator.textContent = 'Error translating formatted order';
+                            });
+                    } else {
+                        statusIndicator.textContent = 'Order formatted';
+                    }
+                } else {
+                    englishTextElement.textContent = formattedText;
+                    
+                    // If translation is enabled, translate the formatted text
+                    if (translateToggle.checked) {
+                        translateText(formattedText, 'en', 'bn')
+                            .then(bengaliText => {
+                                bengaliTextElement.textContent = bengaliText;
+                                statusIndicator.textContent = 'Order formatted';
+                            })
+                            .catch(error => {
+                                console.error('Translation error:', error);
+                                statusIndicator.textContent = 'Error translating formatted order';
+                            });
+                    } else {
+                        statusIndicator.textContent = 'Order formatted';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Formatting error:', error);
+                statusIndicator.textContent = 'Error formatting order: ' + error.message;
             });
     });
     
@@ -356,4 +470,104 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+
+    // Function to format business order using Gemini AI
+    async function formatBusinessOrder(text, language) {
+        try {
+            statusIndicator.textContent = 'Formatting order...';
+            
+            // Create the prompt for Gemini to format the order
+            let prompt;
+            if (language === 'bn') {
+                prompt = `Format the following Bengali business order text into a structured, clean business order format.
+
+Important:
+1. Fix any repetitions (like "তুমি তুমি তুমি কেমন তুমি কেমন আছো") by removing redundant words.
+2. Extract and organize the following information if present:
+   - Customer name and contact details
+   - Order number/ID (if any)
+   - Ordered items with quantities and prices
+   - Delivery address or pickup details
+   - Payment method
+   - Special instructions
+
+3. Format the output as follows:
+   - Use clear sections with headings
+   - List items in a structured way
+   - Add appropriate line breaks
+   - Calculate totals if prices are mentioned
+
+Return the properly formatted order in Bengali without any explanations or additional text.
+
+Text to format: "${text}"`;
+            } else {
+                prompt = `Format the following English business order text into a structured, clean business order format.
+
+Important:
+1. Fix any repetitions (like "you you you how how are you") by removing redundant words.
+2. Extract and organize the following information if present:
+   - Customer name and contact details
+   - Order number/ID (if any)
+   - Ordered items with quantities and prices
+   - Delivery address or pickup details
+   - Payment method
+   - Special instructions
+
+3. Format the output as follows:
+   - Use clear sections with headings
+   - List items in a structured way
+   - Add appropriate line breaks
+   - Calculate totals if prices are mentioned
+
+Return the properly formatted order without any explanations or additional text.
+
+Text to format: "${text}"`;
+            }
+            
+            // Prepare the request body for Gemini API
+            const requestBody = {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: prompt
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            // Send the request to Gemini API
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Gemini API request failed with status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+            }
+            
+            const data = await response.json();
+            
+            // Extract the formatted text from the Gemini API response
+            if (data.candidates && data.candidates.length > 0 && 
+                data.candidates[0].content && 
+                data.candidates[0].content.parts && 
+                data.candidates[0].content.parts.length > 0) {
+                
+                const formattedText = data.candidates[0].content.parts[0].text.trim();
+                return formattedText;
+            }
+            
+            throw new Error('No formatted text returned from Gemini API');
+        } catch (error) {
+            console.error('Order formatting error:', error);
+            statusIndicator.textContent = 'Error formatting order: ' + error.message;
+            throw error;
+        }
+    }
 }); 
