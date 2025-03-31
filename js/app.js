@@ -31,19 +31,34 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Handle results
             recognition.onresult = (event) => {
-                const result = event.results[event.results.length - 1];
-                const transcript = result[0].transcript;
-                
-                if (result.isFinal) {
-                    // Clean up repeated words that sometimes occur in Bengali recognition
-                    const cleanTranscript = cleanupRepeatedWords(transcript);
-                    recognizedText += ' ' + cleanTranscript;
-                    statusIndicator.textContent = 'Recognized: ' + cleanTranscript;
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                // Process results
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
                     
-                    // Update the Bengali text display in real-time
-                    updateBengaliDisplay(recognizedText.trim());
-                } else {
-                    statusIndicator.textContent = 'Listening... ' + transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // Update for interim results
+                if (interimTranscript) {
+                    statusIndicator.textContent = 'Listening... ' + interimTranscript;
+                }
+                
+                // Update for final results
+                if (finalTranscript) {
+                    // Add space if this isn't the first word
+                    if (recognizedText) recognizedText += ' ';
+                    recognizedText += finalTranscript;
+                    
+                    // Update display
+                    bengaliTextElement.textContent = recognizedText;
+                    statusIndicator.textContent = 'Recognized: ' + finalTranscript;
                 }
             };
             
@@ -88,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Start recording function
     function startRecording() {
+        // Clear previous text
         recognizedText = '';
         bengaliTextElement.textContent = '';
         englishTextElement.textContent = '';
@@ -111,8 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Process the recognized text
             if (recognizedText.trim()) {
-                // Display the recognized Bengali text directly
-                bengaliTextElement.textContent = recognizedText.trim();
+                // Bengali text is already displayed in real-time
                 
                 // Translate to English if toggle is on
                 if (translateToggle.checked) {
@@ -320,11 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to translate text using Google Translate (client-side approach)
     async function translateText(text, sourceLang, targetLang) {
         try {
-            // Use raw text for translation without formatting
-            const plainText = text.trim();
-            
-            // Use the free client-side translation approach
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(plainText)}`;
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
             
             const response = await fetch(url);
             
@@ -439,30 +450,4 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
     };
-    
-    // Function to clean up repeated words that often appear in Bengali recognition
-    function cleanupRepeatedWords(text) {
-        if (!text) return '';
-        
-        // Split text into words
-        const words = text.split(/\s+/);
-        const result = [];
-        
-        // Remove immediately repeated words (common in voice recognition)
-        for (let i = 0; i < words.length; i++) {
-            if (i === 0 || words[i] !== words[i-1]) {
-                result.push(words[i]);
-            }
-        }
-        
-        return result.join(' ');
-    }
-    
-    // Function to update the Bengali display with the recognized text
-    function updateBengaliDisplay(text) {
-        if (!text) return;
-        
-        // Simply display the text with minimal formatting
-        bengaliTextElement.textContent = text;
-    }
 }); 
