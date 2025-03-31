@@ -44,3 +44,4 @@ js/test-util.js
 
 # Local development
 *.local 
+.vercel
