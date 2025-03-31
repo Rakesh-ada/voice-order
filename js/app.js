@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bengaliTextElement = document.getElementById('bengaliText');
     const englishTextElement = document.getElementById('englishText');
     const translateToggle = document.getElementById('translateToggle');
+    const formatOrderButton = document.getElementById('formatOrderButton');
     
     // Variables
     let recognition;
@@ -508,11 +509,140 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Add Format Order Button functionality
+        formatOrderButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            console.log('Format Order button clicked');
+            formatOrderText();
+        });
+        
         // Set initial button text
         recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
         
         // Ensure text elements are empty on startup
         bengaliTextElement.textContent = '';
         englishTextElement.textContent = '';
+    }
+    
+    // Format the translated English text into a structured order
+    function formatOrderText() {
+        const translatedText = englishTextElement.textContent.trim();
+        
+        if (!translatedText) {
+            statusIndicator.textContent = 'No text to format';
+            return;
+        }
+        
+        statusIndicator.textContent = 'Formatting order...';
+        
+        try {
+            // Extract product size and quantity information using regex patterns
+            const sizeQuantityPattern = /(\d+)\s*[xX]\s*(\d+)[:\s]+(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+            const sizePattern = /[Ss](?:ize)?\s*(\d+)\s*:\s*/;
+            const simpleQuantityPattern = /(\d+)\s*[xX]\s*(\d+).*?(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+            
+            // Find all matches for quantity patterns
+            let matches = [];
+            let match;
+            
+            // Try the primary pattern first
+            while ((match = sizeQuantityPattern.exec(translatedText)) !== null) {
+                matches.push({
+                    width: match[1],
+                    height: match[2],
+                    quantity: match[3]
+                });
+            }
+            
+            // If no matches found, try the simpler pattern
+            if (matches.length === 0) {
+                while ((match = simpleQuantityPattern.exec(translatedText)) !== null) {
+                    matches.push({
+                        width: match[1],
+                        height: match[2],
+                        quantity: match[3]
+                    });
+                }
+            }
+            
+            // Extract size number if present
+            let sizeNumber = "";
+            const sizeMatch = translatedText.match(sizePattern);
+            if (sizeMatch) {
+                sizeNumber = "S" + sizeMatch[1] + ":";
+            }
+            
+            // Format the structured order
+            let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
+            
+            if (matches.length > 0) {
+                // Add structured items
+                matches.forEach(item => {
+                    formattedOrder += `- ${item.width}x${item.height}: ${item.quantity} kg\n`;
+                });
+                
+                // Update the English text with the formatted order
+                englishTextElement.textContent = formattedOrder;
+                statusIndicator.textContent = 'Order formatted successfully';
+            } else {
+                // If no matches found, try to extract from general patterns
+                const generalPattern = /(\d+)\s*(?:kg|KG|Kg|pieces|pcs|pc|piece)/g;
+                const sizes = ["8x10", "9x12", "10x12", "11x14", "12x15", "13x16", "16x20", "20x24", "20x30"];
+                
+                let generalMatches = [];
+                let generalMatch;
+                
+                while ((generalMatch = generalPattern.exec(translatedText)) !== null) {
+                    if (generalMatches.length < sizes.length) {
+                        generalMatches.push(generalMatch[1]);
+                    }
+                }
+                
+                if (generalMatches.length > 0) {
+                    // Create a reasonable structure with the sizes we know
+                    let formattedOrder = sizeNumber ? sizeNumber + "\n\n" : "";
+                    
+                    for (let i = 0; i < Math.min(generalMatches.length, sizes.length); i++) {
+                        formattedOrder += `- ${sizes[i]}: ${generalMatches[i]} kg\n`;
+                    }
+                    
+                    englishTextElement.textContent = formattedOrder;
+                    statusIndicator.textContent = 'Order formatted with best guess';
+                } else {
+                    statusIndicator.textContent = 'Could not format text. No order quantities found.';
+                }
+            }
+        } catch (error) {
+            console.error('Error formatting order:', error);
+            statusIndicator.textContent = 'Error formatting order: ' + error.message;
+        }
+    }
+    
+    // Copy text functionality
+    document.getElementById('copyBengali').addEventListener('click', function() {
+        copyTextToClipboard(bengaliTextElement.textContent);
+    });
+    
+    document.getElementById('copyEnglish').addEventListener('click', function() {
+        copyTextToClipboard(englishTextElement.textContent);
+    });
+    
+    function copyTextToClipboard(text) {
+        if (!text.trim()) {
+            statusIndicator.textContent = 'Nothing to copy';
+            return;
+        }
+        
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                statusIndicator.textContent = 'Copied to clipboard';
+                setTimeout(() => {
+                    statusIndicator.textContent = 'Ready';
+                }, 2000);
+            })
+            .catch(err => {
+                console.error('Could not copy text:', err);
+                statusIndicator.textContent = 'Copy failed: ' + err.message;
+            });
     }
 });
