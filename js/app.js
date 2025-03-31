@@ -40,19 +40,29 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.onresult = (event) => {
                 console.log('Recognition result received:', event.results);
                 let finalTranscript = '';
+                let interimTranscript = '';
                 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
                 
+                // If we have a final transcript, add it to our raw text and process
                 if (finalTranscript) {
                     console.log('Final transcript:', finalTranscript);
-                        rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
+                    rawBengaliText += (rawBengaliText ? ' ' : '') + finalTranscript.trim();
                     statusIndicator.textContent = 'Recognized: ' + finalTranscript;
                     // Process the text for cleaning
-                            processBengaliText(rawBengaliText);
+                    processBengaliText(rawBengaliText);
+                }
+                
+                // For interim results, don't update the UI directly
+                if (interimTranscript) {
+                    console.log('Interim transcript:', interimTranscript);
+                    statusIndicator.textContent = 'Listening: ' + interimTranscript;
                 }
             };
             
@@ -98,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Enhanced client-side cleaning of repetitions
             const cleanedText = removeRepetitions(text);
             
-            // Display the cleaned text
+            // Display ONLY the cleaned text, never the raw text
             bengaliTextElement.textContent = cleanedText;
             statusIndicator.textContent = 'Processed';
             
