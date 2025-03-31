@@ -1,14 +1,17 @@
 :root {
-    --primary-color: #4285f4;
-    --secondary-color: #ea4335;
-    --accent-color: #34a853;
-    --warning-color: #fbbc05;
-    --text-color: #202124;
-    --light-bg: #f8f9fa;
-    --card-bg: #ffffff;
+    --primary-color: #64b5f6;  /* Lighter blue for better visibility on dark */
+    --secondary-color: #ff5252; /* Brighter red for dark theme */
+    --accent-color: #4caf50;   /* Slightly brighter green */
+    --warning-color: #ffca28;  /* Brighter yellow */
+    --text-color: #e0e0e0;     /* Light gray text for dark theme */
+    --light-bg: #121212;       /* Dark background */
+    --card-bg: #1e1e1e;        /* Dark card background */
+    --header-color: #bbdefb;   /* Light blue for headers */
     --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     --border-radius: 12px;
+    --border-color: #333333;   /* Dark border color */
+    --status-color: #b2ebf2;   /* Light cyan for status text */
 }
 
 * {
@@ -41,21 +44,23 @@ header {
     text-align: center;
     margin-bottom: 20px;
     padding: 15px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--border-color);
 }
 
 h1 {
-    color: var(--primary-color);
+    color: var(--header-color);
     font-size: 2rem;
     margin: 0;
     padding: 0;
+    text-shadow: 0 0 5px rgba(187, 222, 251, 0.3);
 }
 
 h2 {
-    color: var(--primary-color);
+    color: var(--header-color);
     font-size: 1.2rem;
     margin-bottom: 10px;
     text-align: center;
+    text-shadow: 0 0 5px rgba(187, 222, 251, 0.3);
 }
 
 main {
@@ -76,6 +81,7 @@ main {
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
 .btn {
@@ -97,11 +103,11 @@ main {
 
 .btn.primary {
     background-color: var(--primary-color);
-    color: white;
+    color: #000000; /* Black text for better contrast */
 }
 
 .btn.secondary {
-    background-color: #dfe1e5;
+    background-color: #383838; /* Darker gray */
     color: var(--text-color);
 }
 
@@ -132,7 +138,7 @@ main {
 
 .btn.install {
     background-color: var(--warning-color);
-    color: var(--text-color);
+    color: #000000; /* Black text for contrast */
     margin-top: 15px;
     padding: 10px 15px;
     width: 100%;
@@ -143,8 +149,8 @@ main {
 }
 
 .btn.primary:disabled, .btn.secondary:disabled {
-    background-color: #dfe1e5;
-    color: #9aa0a6;
+    background-color: #383838;
+    color: #666666;
     cursor: not-allowed;
     transform: none;
 }
@@ -159,8 +165,10 @@ main {
     padding: 10px;
     margin-top: 10px;
     font-weight: bold;
-    color: var(--primary-color);
+    color: var(--status-color);
     font-size: 0.9rem;
+    background-color: rgba(30, 30, 30, 0.8);
+    border-radius: var(--border-radius);
 }
 
 .results-container {
@@ -180,8 +188,25 @@ main {
     margin-bottom: 10px;
     white-space: pre-line;
     overflow-y: auto;
-    font-size: 1rem;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem; /* Slightly larger for better readability */
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    letter-spacing: 0.3px; /* Better letter spacing for readability */
+    line-height: 1.8; /* More spacing between lines */
+}
+
+/* Add a stronger focus to Bengali text */
+#bengaliText {
+    font-size: 1.3rem;
+    color: #ffffff; /* Pure white for maximum visibility */
+    font-weight: 500; /* Slightly bolder */
+}
+
+/* Add a subtle focus style when text is selected */
+.result-box::selection,
+.result-box *::selection {
+    background-color: var(--primary-color);
+    color: #000000;
 }
 
 .bengali-results, .english-results {
@@ -192,12 +217,17 @@ main {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     padding: 15px;
+    border: 1px solid var(--border-color);
 }
 
 .options {
     display: flex;
     justify-content: center;
     margin: 10px 0;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 10px;
+    border: 1px solid var(--border-color);
 }
 
 /* Toggle Switch */
@@ -222,7 +252,7 @@ main {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #555; /* Darker background for off state */
     transition: .4s;
 }
 
@@ -258,6 +288,8 @@ input:checked + .slider:before {
 }
 
 .toggle-label {
+    color: var(--text-color);
+    font-weight: bold;
     position: absolute;
     right: -80px;
     top: 5px;
@@ -367,4 +399,11 @@ footer {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+/* Make footer text more visible */
+footer p {
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 10px;
 } 
