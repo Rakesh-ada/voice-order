@@ -5,12 +5,13 @@
 ![PWA Ready](https://img.shields.io/badge/PWA-ready-brightgreen)
 ![No API Keys](https://img.shields.io/badge/API%20Keys-Not%20Required-brightgreen)
 
-A Progressive Web App (PWA) that converts Bengali speech to text, formats it as a business order, and optionally translates it to English. Perfect for small businesses that need to quickly record and process orders in Bengali.
+A Progressive Web App (PWA) that converts Bengali speech to text, processes the text, and optionally translates it to English. Perfect for small businesses that need to quickly record and process orders in Bengali.
 
 ## Features ✨
 
 - **Speech Recognition**: Uses browser's built-in Web Speech API to convert Bengali speech to text (no API key needed!)
-- **Text Formatting**: Automatically formats speech into structured business orders with dimension-based parsing
+- **Dark Theme**: Enhanced visibility with a dark theme for better readability
+- **Direct Text Display**: Shows exactly what you speak without unnecessary formatting
 - **Translation**: Free client-side translation from Bengali to English (no API key needed!)
 - **Clipboard Support**: One-click copy for both Bengali and English text
 - **PWA Support**: Install on desktop or mobile devices for offline use
@@ -19,7 +20,9 @@ A Progressive Web App (PWA) that converts Bengali speech to text, formats it as 
 
 ## Demo 🎬
 
-Check out the live demo [here](https://yourusername.github.io/bengali-voice-order/) (Replace with your GitHub Pages URL once deployed).
+Check out the live demo at:
+- [Vercel Deployment](https://voice-order-dfemzouax-rakesh-s-projects-5b411d17.vercel.app/)
+- [GitHub Pages](https://rakesh-ada.github.io/voice-order/)
 
 ## Setup Instructions 🛠️
 
@@ -32,8 +35,8 @@ Check out the live demo [here](https://yourusername.github.io/bengali-voice-orde
 
 1. Clone this repository
 ```bash
-git clone https://github.com/yourusername/bengali-voice-order.git
-cd bengali-voice-order
+git clone https://github.com/Rakesh-ada/voice-order.git
+cd voice-order
 ```
 
 2. Serve the app using a local web server:
@@ -59,6 +62,13 @@ To install the app as a PWA on mobile:
 3. Scroll down and tap "Add to Home Screen"
 4. Tap "Add" in the top-right corner
 
+## Latest Updates 🔄
+
+- **Dark Theme**: Enhanced visibility with dark background and high-contrast text
+- **Direct Speech Recognition**: What you speak is what you see - without formatting
+- **Real-time Display**: Text appears as you speak
+- **Security Enhancements**: Added security headers for safer browsing
+
 ## How It Works 🔍
 
 ### Speech Recognition
@@ -76,33 +86,6 @@ The app uses a client-side approach to connect directly to Google Translate:
 - No server setup needed
 
 Note: The translation feature has usage limits. If you need high-volume translation, consider integrating with an official API.
-
-### Dimension Order Formatting
-The app can automatically detect and format dimension-based orders with categories:
-
-**Input Example:**
-```
-S1 8x10 10kg 9x12 15kg 11x14 15kg 13x16 15kg 16x20 5kg Black loose 9x12 15kg 11x14 30kg 13x16 15kg Goutam 12x18 20kg 14x20 40kg
-```
-
-**Formatted Output:**
-```
-S1:
-- 8x10: 10 kg
-- 9x12: 15 kg
-- 11x14: 15 kg
-- 13x16: 15 kg
-- 16x20: 5 kg
-
-Black loose:
-- 9x12: 15 kg
-- 11x14: 30 kg
-- 13x16: 15 kg
-
-Goutam:
-- 12x18: 20 kg
-- 14x20: 40 kg
-```
 
 ## Browser Compatibility 🌐
 
